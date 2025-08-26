@@ -52,7 +52,7 @@ async function getCompanyOverview(symbol, apiKey, provider) {
       return { error: `Error fetching overview: ${error.message}` };
     }
   } else if(provider === 'polygon') {
-
+    // POLYGON PLACEHOLDER
   }
 }
 
@@ -102,7 +102,7 @@ async function getStockQuote(symbol, apiKey, provider) {
       return { error: `Error fetching quote: ${error.message}` };
     }
   } else if(provider === 'polygon') {
-
+    // POLYGON PLACEHOLDER
   }
 }
 
@@ -152,7 +152,7 @@ async function getSMA(symbol, apiKey, timePeriod, provider) {
       return { error: `Error fetching SMA: ${error.message}` };
     }
   } else if (provider === 'polygon') {
-
+    // POLYGON PLACEHOLDER
   }
 }
 
@@ -205,7 +205,7 @@ async function getAverageVolume(symbol, apiKey, provider) {
       return { error: `Error fetching volume: ${error.message}` };
     }
   } else if (provider === 'polygon') {
-
+    // POLYGON PLACEHOLDER
   }
 }
 
@@ -243,7 +243,7 @@ async function getNewsSentiment(symbol, from, to, apiKey, provider) {
   } else if (provider === 'yfinance') {
     return { error: 'News sentiment not supported by yahoo-finance2' };
   } else if (provider === 'polygon') {
-    
+    // POLYGON PLACEHOLDER
   }
 }
 
@@ -395,7 +395,7 @@ async function analyzeStock(symbol, apiKey, provider) {
   } else if (newsDataResult.error && provider === 'yfinance') {
     result.newsError = 'News sentiment not supported by yahoo-finance2';
   } else if (provider === 'polygon') {
-    
+    // POLYGON PLACEHOLDER
   }
 
   return result;
