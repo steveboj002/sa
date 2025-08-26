@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@polygon.io/client-js": "^8.2.0",
     "axios": "^1.11.0",
     "bcrypt": "^5.1.1",
     "express": "^5.1.0",

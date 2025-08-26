@@ -51,6 +51,8 @@ async function getCompanyOverview(symbol, apiKey, provider) {
       console.error(`Error fetching overview for ${symbol} with yahoo-finance2: ${error.message}`);
       return { error: `Error fetching overview: ${error.message}` };
     }
+  } else if(provider === 'polygon') {
+
   }
 }
 
@@ -99,6 +101,8 @@ async function getStockQuote(symbol, apiKey, provider) {
       console.error(`Error fetching quote for ${symbol} with yahoo-finance2: ${error.message}`);
       return { error: `Error fetching quote: ${error.message}` };
     }
+  } else if(provider === 'polygon') {
+
   }
 }
 
@@ -147,6 +151,8 @@ async function getSMA(symbol, apiKey, timePeriod, provider) {
       console.error(`Error fetching ${timePeriod}-day SMA for ${symbol} with yahoo-finance2: ${error.message}`);
       return { error: `Error fetching SMA: ${error.message}` };
     }
+  } else if (provider === 'polygon') {
+
   }
 }
 
@@ -198,6 +204,8 @@ async function getAverageVolume(symbol, apiKey, provider) {
       console.error(`Error fetching average volume for ${symbol} with yahoo-finance2: ${error.message}`);
       return { error: `Error fetching volume: ${error.message}` };
     }
+  } else if (provider === 'polygon') {
+
   }
 }
 
@@ -234,6 +242,8 @@ async function getNewsSentiment(symbol, from, to, apiKey, provider) {
     }
   } else if (provider === 'yfinance') {
     return { error: 'News sentiment not supported by yahoo-finance2' };
+  } else if (provider === 'polygon') {
+    
   }
 }
 
@@ -384,6 +394,8 @@ async function analyzeStock(symbol, apiKey, provider) {
     result.mentions.comparison = result.mentions.today > 0 && result.mentions.average > 0 ? ((result.mentions.today - result.mentions.average) / result.mentions.average * 100).toFixed(2) + '%' : 'N/A';
   } else if (newsDataResult.error && provider === 'yfinance') {
     result.newsError = 'News sentiment not supported by yahoo-finance2';
+  } else if (provider === 'polygon') {
+    
   }
 
   return result;

@@ -8,6 +8,8 @@ export JWT_SECRET=your_secure_secret
 
 <!-- polygon.io -->
 <!-- export =pSy_bKGg9lOgjghpt7ynjP5pRPhYygzp -->
+export POLYGON_API_KEY=pSy_bKGg9lOgjghpt7ynjP5pRPhYygzp
+
 
 Server
 node server.js
