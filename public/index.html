@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Sentiment Analysis</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
+  <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
+    <h1 class="text-2xl font-bold mb-4 text-center">Stock Sentiment Analysis</h1>
+    <div id="auth-section" class="mb-4">
+      <div id="login-form">
+        <input type="text" id="login-username" placeholder="Username" class="w-full p-2 mb-2 border rounded">
+        <input type="password" id="login-password" placeholder="Password" class="w-full p-2 mb-2 border rounded">
+        <button id="login-btn" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Login</button>
+        <p class="text-center mt-2">
+          <button id="show-signup-btn" class="text-blue-500 hover:underline">Need an account? Sign up</button>
+        </p>
+      </div>
+      <div id="signup-form" class="hidden">
+        <input type="text" id="signup-username" placeholder="Username" class="w-full p-2 mb-2 border rounded">
+        <input type="password" id="signup-password" placeholder="Password" class="w-full p-2 mb-2 border rounded">
+        <button id="signup-btn" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Sign Up</button>
+        <p class="text-center mt-2">
+          <button id="show-login-btn" class="text-blue-500 hover:underline">Already have an account? Log in</button>
+        </p>
+      </div>
+      <div id="user-section" class="hidden">
+        <p id="user-greeting" class="text-center mb-2"></p>
+        <button id="logout-btn" class="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600">Logout</button>
+      </div>
+    </div>
+    <div id="analysis-section" class="mb-4 hidden">
+      <div class="mb-2">
+        <label for="provider" class="block text-sm font-medium text-gray-700">Select Data Provider:</label>
+        <select id="provider" class="mt-1 block w-full p-2 border rounded">
+          <option value="alpha_vantage">Alpha Vantage</option>
+          <option value="yfinance">Yahoo Finance (yfinance)</option>
+        </select>
+      </div>
+      <input
+        type="text"
+        id="symbol"
+        placeholder="Enter stock symbols (e.g., NVDA,ASTS or NVDA, ASTS)"
+        class="w-full p-2 border rounded"
+      >
+      <div class="flex space-x-2 mt-2">
+        <button
+          id="analyze-btn"
+          class="flex-1 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+        >
+          Analyze
+        </button>
+        <button
+          id="add-watchlist-btn"
+          class="flex-1 bg-green-500 text-white p-2 rounded hover:bg-green-600"
+        >
+          Add to Watchlist
+        </button>
+      </div>
+    </div>
+    <div id="watchlist-section" class="mb-4 hidden">
+      <h2 class="text-xl font-semibold mb-2">Watchlist</h2>
+      <div id="watchlist" class="flex flex-wrap gap-2 mb-2"></div>
+      <button
+        id="analyze-watchlist-btn"
+        class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 hidden"
+      >
+        Analyze Watchlist
+      </button>
+    </div>
+    <div id="loading" class="hidden text-center text-gray-500">Loading...</div>
+    <div id="error" class="hidden text-center text-red-500"></div>
+    <div id="results" class="hidden"></div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
