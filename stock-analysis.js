@@ -2,9 +2,26 @@ const axios = require('axios');
 const moment = require('moment');
 const yahooFinance = require('yahoo-finance2').default;
 
+// Dynamically import Polygon.io client for ESM compatibility (kept for future use)
+let polygonClient;
+async function initializePolygonClient() {
+  if (!polygonClient) {
+    const { restClient } = await import('@polygon.io/client-js');
+    polygonClient = restClient(process.env.POLYGON_API_KEY, "https://api.polygon.io");
+  }
+  return polygonClient;
+}
+
 // Validate environment
 if (!process.env.ALPHA_VANTAGE_API_KEY) {
   throw new Error('ALPHA_VANTAGE_API_KEY environment variable not set. Run: export ALPHA_VANTAGE_API_KEY=your_av_key');
+}
+if (!process.env.POLYGON_API_KEY) {
+  throw new Error('POLYGON_API_KEY environment variable not set. Run: export POLYGON_API_KEY=your_polygon_key');
+}
+// Debug: Verify API key
+if (process.env.POLYGON_API_KEY !== 'pSy_bKGg9lOgjghpt7ynjP5pRPhYygzp') {
+  console.warn('POLYGON_API_KEY does not match expected value. Ensure .env matches the working curl key.');
 }
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -14,6 +31,8 @@ function getApiErrorMessage(response, defaultMessage) {
     return response.data.Information;
   } else if (response?.data?.['Error Message']) {
     return response.data['Error Message'];
+  } else if (response?.data?.status === 'ERROR') {
+    return response.data.error || defaultMessage;
   }
   return defaultMessage;
 }
@@ -51,8 +70,24 @@ async function getCompanyOverview(symbol, apiKey, provider) {
       console.error(`Error fetching overview for ${symbol} with yahoo-finance2: ${error.message}`);
       return { error: `Error fetching overview: ${error.message}` };
     }
-  } else if(provider === 'polygon') {
-    // POLYGON PLACEHOLDER
+  } else if (provider === 'polygon') {
+    try {
+      console.log(`Fetching overview for ${symbol} with Polygon.io`);
+      const response = await axios.get(`https://api.polygon.io/v3/reference/tickers/${symbol}?apiKey=${apiKey}`);
+      console.log(`Polygon.io overview response for ${symbol}:`, JSON.stringify(response.data, null, 2));
+      await delay(1000);
+      if (!response.data.results || !response.data.results.name) {
+        console.warn(`No overview data for ${symbol}`);
+        return { error: `No overview data returned for ${symbol}` };
+      }
+      return { data: response.data.results.name };
+    } catch (error) {
+      const errorMessage = error.response
+        ? `Error fetching overview for ${symbol}: ${error.response.status || error.message}`
+        : `Error fetching overview for ${symbol}: ${error.message}`;
+      console.error(errorMessage);
+      return { error: errorMessage };
+    }
   }
 }
 
@@ -101,10 +136,39 @@ async function getStockQuote(symbol, apiKey, provider) {
       console.error(`Error fetching quote for ${symbol} with yahoo-finance2: ${error.message}`);
       return { error: `Error fetching quote: ${error.message}` };
     }
-  } else if(provider === 'polygon') {
-    // POLYGON PLACEHOLDER
+  } else if (provider === 'polygon') {
+    try {
+      console.log(`Fetching quote for ${symbol} with Polygon.io`);
+      const url = `https://api.polygon.io/v3/quotes/${symbol}?limit=1&apiKey=${apiKey}`;
+      const response = await axios.get(url);
+      console.log(`Polygon.io quote response for ${symbol}:`, JSON.stringify(response.data, null, 2));
+      await delay(1000);
+      if (!response.data.results || response.data.results.length === 0) {
+        console.warn(`No quote data for ${symbol}`);
+        return { error: `No quote data returned for ${symbol}` };
+      }
+      const quote = response.data.results[0];
+      return {
+        data: {
+          '05. price': quote.ask_price?.toFixed(2) || 'N/A',
+          '09. change': (quote.ask_price - (quote.previous_close || quote.bid_price || 0)).toFixed(2),
+          '10. change percent': ((quote.ask_price - (quote.previous_close || quote.bid_price || 1)) / (quote.previous_close || quote.bid_price || 1) * 100).toFixed(2),
+          '02. open': quote.open?.toFixed(2) || 'N/A',
+          '03. high': quote.high?.toFixed(2) || 'N/A',
+          '04. low': quote.low?.toFixed(2) || 'N/A',
+          '08. previous close': quote.previous_close?.toFixed(2) || 'N/A'
+        }
+      };
+    } catch (error) {
+      const errorMessage = error.response
+        ? `Error fetching quote for ${symbol}: ${error.response.status || error.message}`
+        : `Error fetching quote for ${symbol}: ${error.message}`;
+      console.error(errorMessage);
+      return { error: errorMessage };
+    }
   }
 }
+
 
 async function getSMA(symbol, apiKey, timePeriod, provider) {
   if (!symbol || !apiKey || !timePeriod) return { error: `Invalid symbol, API key, or time period for getSMA (period: ${timePeriod})` };
@@ -152,7 +216,25 @@ async function getSMA(symbol, apiKey, timePeriod, provider) {
       return { error: `Error fetching SMA: ${error.message}` };
     }
   } else if (provider === 'polygon') {
-    // POLYGON PLACEHOLDER
+    try {
+      console.log(`Fetching ${timePeriod}-day SMA for ${symbol} with Polygon.io`);
+      const response = await axios.get(`https://api.polygon.io/v2/aggs/ticker/${symbol}/range/1/day/${moment().subtract(timePeriod, 'days').format('YYYY-MM-DD')}/${moment().format('YYYY-MM-DD')}?adjusted=true&limit=${timePeriod}&apiKey=${apiKey}`);
+      console.log(`Polygon.io SMA response for ${symbol} (${timePeriod}-day):`, JSON.stringify(response.data, null, 2));
+      await delay(1000);
+      if (!response.data.results || response.data.results.length === 0) {
+        console.warn(`No SMA data for ${symbol} (period: ${timePeriod})`);
+        return { error: `No SMA data returned for ${symbol}` };
+      }
+      const closes = response.data.results.map(result => result.c).slice(0, timePeriod);
+      const sma = closes.reduce((sum, val) => sum + val, 0) / closes.length;
+      return { data: parseFloat(sma.toFixed(2)) };
+    } catch (error) {
+      const errorMessage = error.response
+        ? `Error fetching ${timePeriod}-day SMA for ${symbol}: ${error.response.status || error.message}`
+        : `Error fetching ${timePeriod}-day SMA for ${symbol}: ${error.message}`;
+      console.error(errorMessage);
+      return { error: errorMessage };
+    }
   }
 }
 
@@ -205,7 +287,29 @@ async function getAverageVolume(symbol, apiKey, provider) {
       return { error: `Error fetching volume: ${error.message}` };
     }
   } else if (provider === 'polygon') {
-    // POLYGON PLACEHOLDER
+    try {
+      console.log(`Fetching average volume for ${symbol} with Polygon.io`);
+      const response = await axios.get(`https://api.polygon.io/v2/aggs/ticker/${symbol}/range/1/day/${moment().subtract(20, 'days').format('YYYY-MM-DD')}/${moment().format('YYYY-MM-DD')}?adjusted=true&limit=20&apiKey=${apiKey}`);
+      console.log(`Polygon.io volume response for ${symbol}:`, JSON.stringify(response.data, null, 2));
+      await delay(1000);
+      if (!response.data.results || response.data.results.length === 0) {
+        console.warn(`No volume data for ${symbol}`);
+        return { error: `No volume data returned for ${symbol}` };
+      }
+      const volumes = response.data.results.map(result => result.v);
+      const avgVolume = volumes.reduce((sum, vol) => sum + vol, 0) / volumes.length;
+      const latestVolume = volumes[volumes.length - 1]; // Most recent volume
+      return { 
+        data: parseFloat(avgVolume.toFixed(0)),
+        latestVolume: latestVolume 
+      };
+    } catch (error) {
+      const errorMessage = error.response
+        ? `Error fetching average volume for ${symbol}: ${error.response.status || error.message}`
+        : `Error fetching average volume for ${symbol}: ${error.message}`;
+      console.error(errorMessage);
+      return { error: errorMessage };
+    }
   }
 }
 
@@ -243,7 +347,36 @@ async function getNewsSentiment(symbol, from, to, apiKey, provider) {
   } else if (provider === 'yfinance') {
     return { error: 'News sentiment not supported by yahoo-finance2' };
   } else if (provider === 'polygon') {
-    // POLYGON PLACEHOLDER
+    try {
+      console.log(`Fetching news sentiment for ${symbol} with Polygon.io`);
+      const response = await axios.get(`https://api.polygon.io/v2/reference/news?ticker=${symbol}&published_utc.gte=${from}T00:00:00Z&published_utc.lte=${to}T23:59:59Z&limit=1000&apiKey=${apiKey}`);
+      console.log(`Polygon.io news response for ${symbol}:`, JSON.stringify(response.data, null, 2));
+      await delay(1000);
+      if (!response.data.results || response.data.results.length === 0) {
+        console.warn(`No news sentiment data for ${symbol} from ${from} to ${to}`);
+        return { error: `No news sentiment data returned for ${symbol}` };
+      }
+      const feed = response.data.results.map(article => ({
+        title: article.title,
+        url: article.article_url,
+        time_published: moment(article.published_utc).format('YYYYMMDDTHHmmss'),
+        summary: article.description || '',
+        source: article.publisher.name,
+        ticker_sentiment: article.tickers.map(ticker => ({
+          ticker,
+          relevance_score: 0.5,
+          ticker_sentiment_score: 0,
+          ticker_sentiment_label: 'Neutral'
+        }))
+      }));
+      return { data: feed };
+    } catch (error) {
+      const errorMessage = error.response
+        ? `Error fetching news sentiment for ${symbol}: ${error.response.status || error.message}`
+        : `Error fetching news sentiment for ${symbol}: ${error.message}`;
+      console.error(errorMessage);
+      return { error: errorMessage };
+    }
   }
 }
 
@@ -300,7 +433,7 @@ async function analyzeStock(symbol, apiKey, provider) {
     companyName: companyNameResult.error ? symbol.toUpperCase() : companyNameResult.data,
     companyNameError: companyNameResult.error || null,
     date: moment().format('YYYY-MM-DD'),
-    timestamp: '05:53 PM EDT, August 25, 2025',
+    timestamp: '02:08 PM EDT, August 26, 2025',
     quote: null,
     quoteError: quoteDataResult.error || null,
     sma50Error: sma50Result.error || null,
@@ -330,7 +463,19 @@ async function analyzeStock(symbol, apiKey, provider) {
 
   if (quoteDataResult.data) {
     const currentPrice = parseFloat(quoteDataResult.data['05. price']);
-    const latestVolume = (await yahooFinance.quote(symbol)).regularMarketVolume || 0;
+    
+    // Use latest volume from volume result if available, otherwise fallback to yahooFinance
+    let latestVolume = avgVolumeResult.latestVolume || 0;
+    if (!latestVolume) {
+      try {
+        const yahooQuote = await yahooFinance.quote(symbol);
+        latestVolume = yahooQuote.regularMarketVolume || 0;
+      } catch (error) {
+        console.warn(`Failed to get latest volume for ${symbol}: ${error.message}`);
+        latestVolume = 0;
+      }
+    }
+    
     result.quote = {
       price: currentPrice.toFixed(2),
       change: parseFloat(quoteDataResult.data['09. change']).toFixed(2),
@@ -395,7 +540,7 @@ async function analyzeStock(symbol, apiKey, provider) {
   } else if (newsDataResult.error && provider === 'yfinance') {
     result.newsError = 'News sentiment not supported by yahoo-finance2';
   } else if (provider === 'polygon') {
-    // POLYGON PLACEHOLDER
+    result.newsError = newsDataResult.error || 'No news sentiment data available';
   }
 
   return result;

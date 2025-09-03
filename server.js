@@ -12,6 +12,7 @@ app.use(express.static('public'));
 const db = new sqlite3.Database('database.db');
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY;
+const POLYGON_API_KEY = process.env.POLYGON_API_KEY;
 
 db.serialize(() => {
   db.run('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT)');
@@ -109,10 +110,13 @@ app.post('/analyze', authenticateToken, async (req, res) => {
     return res.status(400).json({ error: 'No valid symbols provided' });
   }
 
+  // Determine which API key to use based on provider
+  const apiKey = provider === 'polygon' ? POLYGON_API_KEY : ALPHA_VANTAGE_API_KEY;
+
   try {
     const results = await Promise.all(symbolArray.map(async symbol => {
       try {
-        const result = await analyzeStock(symbol, ALPHA_VANTAGE_API_KEY, provider);
+        const result = await analyzeStock(symbol, apiKey, provider);
         return { symbol, data: result };
       } catch (error) {
         return { symbol, error: error.message };
@@ -123,6 +127,8 @@ app.post('/analyze', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Error processing analysis' });
   }
 });
+
+
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
