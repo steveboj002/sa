@@ -23,8 +23,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const error = document.getElementById('error');
   const results = document.getElementById('results');
   const providerSelect = document.getElementById('provider');
+  const toleranceInput = document.getElementById('tolerance');
+  const volumeToleranceInput = document.getElementById('volumeTolerance');
+  const priceChangeToleranceInput = document.getElementById('priceChangeTolerance');
+  const intervalInput = document.getElementById('interval');
+  const stopAnalysisBtn = document.getElementById('stop-analysis-btn');
+  const countdownTimer = document.getElementById('countdown-timer');
 
   let watchlist = [];
+  let analysisIntervalId = null;
+  let countdownIntervalId = null;
+  let timeLeft = 0;
 
   function updateAuthUI(isLoggedIn, username) {
     loginForm.classList.toggle('hidden', isLoggedIn);
@@ -44,8 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       watchlist = [];
       renderWatchlist();
-      loginUsername.value = '';
-      loginPassword.value = '';
+      // loginUsername.value = ''; // Temporarily commented out for pre-population
+      // loginPassword.value = ''; // Temporarily commented out for pre-population
       signupUsername.value = '';
       signupPassword.value = '';
       error.classList.add('hidden');
@@ -186,46 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
           } else {
             const stock = result.data;
-            resultDiv.innerHTML = `
-              <h2 class="text-xl font-semibold mb-2">Results for ${stock.companyName} (${stock.symbol})</h2>
-              <p class="text-sm text-gray-500 mb-4">As of 04:59 PM EDT, August 25, 2025</p>
-              ${stock.companyNameError ? `<p class="text-red-500">Company Name Error: ${stock.companyNameError}</p>` : ''}
-              <div id="quote-section-${stock.symbol}" class="mb-4 ${stock.quote ? '' : 'hidden'}">
-                <h3 class="text-lg font-medium">Stock Quote</h3>
-                ${stock.quoteError ? `<p class="text-red-500">Quote Error: ${stock.quoteError}</p>` : ''}
-                <p>Current Price: $${stock.quote?.price || 'N/A'}</p>
-                <p>Change: ${stock.quote?.change || 'N/A'} (${stock.quote?.changePercent || 'N/A'}%)</p>
-                <p>Open: $${stock.quote?.open || 'N/A'}</p>
-                <p>High: $${stock.quote?.high || 'N/A'}</p>
-                <p>Low: $${stock.quote?.low || 'N/A'}</p>
-                <p>Previous Close: $${stock.quote?.previousClose || 'N/A'}</p>
-                <p>Percent from 50-Day MA: ${stock.quote?.percentFrom50DayMA || 'N/A'}% ${stock.sma50Error ? `<span class="text-red-500">(${stock.sma50Error})</span>` : ''}</p>
-                <p>Percent from 200-Day MA: ${stock.quote?.percentFrom200DayMA || 'N/A'}% ${stock.sma200Error ? `<span class="text-red-500">(${stock.sma200Error})</span>` : ''}</p>
-                <p>Volume Comparison to 20-Day Average: ${stock.quote?.volumeComparison || 'N/A'}% ${stock.volumeError ? `<span class="text-red-500">(${stock.volumeError})</span>` : ''}</p>
-                <p>Price-Based Sentiment: ${stock.quote?.priceSentiment || 'N/A'}</p>
-              </div>
-              <div class="mb-4">
-                <h3 class="text-lg font-medium">Mention Counts</h3>
-                ${stock.newsError ? `<p class="text-red-500">News Error: ${stock.newsError}</p>` : ''}
-                <p>Today's News Mentions: ${stock.mentions.today}</p>
-                <p>Average Mentions (Last 20 Trading Days): ${stock.mentions.average}</p>
-                <p>Comparison to Average: ${stock.mentions.comparison}</p>
-              </div>
-              <div class="mb-4">
-                <h3 class="text-lg font-medium">Sentiment Analysis (Today)</h3>
-                <p>Overall Score: ${stock.sentimentToday.score} (${stock.sentimentToday.classification})</p>
-                <p>Positive: ${stock.sentimentToday.positive}%</p>
-                <p>Negative: ${stock.sentimentToday.negative}%</p>
-                <p>Neutral: ${stock.sentimentToday.neutral}%</p>
-              </div>
-              <div class="mb-4">
-                <h3 class="text-lg font-medium">Sentiment Analysis (Last 20 Trading Days)</h3>
-                <p>Overall Score: ${stock.sentimentAverage.score} (${stock.sentimentAverage.classification})</p>
-                <p>Positive: ${stock.sentimentAverage.positive}%</p>
-                <p>Negative: ${stock.sentimentAverage.negative}%</p>
-                <p>Neutral: ${stock.sentimentAverage.neutral}%</p>
-              </div>
-            `;
+            displayStockData(stock);
           }
           results.appendChild(resultDiv);
         });
@@ -240,6 +210,81 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally {
       loading.classList.add('hidden');
     }
+  }
+
+  function displayStockData(stock) {
+      const stockDiv = document.createElement('div');
+      stockDiv.className = 'bg-white p-4 rounded-lg shadow mb-4';
+
+      const percent50Day = parseFloat(stock.quote?.percentFrom50DayMA);
+      const percent200Day = parseFloat(stock.quote?.percentFrom200DayMA);
+      const tolerance = parseFloat(toleranceInput.value);
+      const volumeTolerance = parseFloat(volumeToleranceInput.value);
+      const priceChangeTolerance = parseFloat(priceChangeToleranceInput.value);
+
+      let ma50ColorClass = '';
+      if (!isNaN(percent50Day) && percent50Day >= -tolerance && percent50Day <= tolerance) {
+          ma50ColorClass = 'text-green-600 font-semibold';
+      }
+
+      let ma200ColorClass = '';
+      if (!isNaN(percent200Day) && percent200Day >= -tolerance && percent200Day <= tolerance) {
+          ma200ColorClass = 'text-green-600 font-semibold';
+      }
+
+      let volumeComparisonColorClass = '';
+      const volumeComparison = parseFloat(stock.quote?.volumeComparison);
+      if (!isNaN(volumeComparison) && Math.abs(volumeComparison) > volumeTolerance) {
+          volumeComparisonColorClass = 'text-green-600 font-semibold';
+      }
+
+      let priceChangeColorClass = '';
+      const changePercent = parseFloat(stock.quote?.changePercent);
+      if (!isNaN(changePercent) && Math.abs(changePercent) > priceChangeTolerance) {
+          priceChangeColorClass = 'text-green-600 font-semibold';
+      }
+
+      stockDiv.innerHTML = `
+          <h2 class="text-xl font-semibold mb-2">Results for ${stock.companyName} (${stock.symbol})</h2>
+          <p class="text-sm text-gray-500 mb-4">As of 04:59 PM EDT, August 25, 2025</p>
+          ${stock.companyNameError ? `<p class="text-red-500">Company Name Error: ${stock.companyNameError}</p>` : ''}
+          <div id="quote-section-${stock.symbol}" class="mb-4 ${stock.quote ? '' : 'hidden'}">
+              <h3 class="text-lg font-medium">Stock Quote</h3>
+              ${stock.quoteError ? `<p class="text-red-500">Quote Error: ${stock.quoteError}</p>` : ''}
+              <p>Current Price: $${stock.quote?.price || 'N/A'}</p>
+              <p class="${priceChangeColorClass}">Change: ${stock.quote?.change || 'N/A'} (${stock.quote?.changePercent || 'N/A'}%)</p>
+              <p>Open: $${stock.quote?.open || 'N/A'}</p>
+              <p>High: $${stock.quote?.high || 'N/A'}</p>
+              <p>Low: $${stock.quote?.low || 'N/A'}</p>
+              <p>Previous Close: $${stock.quote?.previousClose || 'N/A'}</p>
+              <p class="${ma50ColorClass}">Percent from 50-Day MA: ${percent50Day || 'N/A'}% ${stock.sma50Error ? `<span class="text-red-500">(${stock.sma50Error})</span>` : ''}</p>
+              <p class="${ma200ColorClass}">Percent from 200-Day MA: ${percent200Day || 'N/A'}% ${stock.sma200Error ? `<span class="text-red-500">(${stock.sma200Error})</span>` : ''}</p>
+              <p class="${volumeComparisonColorClass}">Volume Comparison to 20-Day Average: ${volumeComparison || 'N/A'}% ${stock.volumeError ? `<span class="text-red-500">(${stock.volumeError})</span>` : ''}</p>
+              <p>Price-Based Sentiment: ${stock.quote?.priceSentiment || 'N/A'}</p>
+          </div>
+          <div class="mb-4">
+              <h3 class="text-lg font-medium">Mention Counts</h3>
+              ${stock.newsError ? `<p class="text-red-500">News Error: ${stock.newsError}</p>` : ''}
+              <p>Today's News Mentions: ${stock.mentions.today}</p>
+              <p>Average Mentions (Last 20 Trading Days): ${stock.mentions.average}</p>
+              <p>Comparison to Average: ${stock.mentions.comparison}</p>
+          </div>
+          <div class="mb-4">
+              <h3 class="text-lg font-medium">Sentiment Analysis (Today)</h3>
+              <p>Overall Score: ${stock.sentimentToday.score} (${stock.sentimentToday.classification})</p>
+              <p>Positive: ${stock.sentimentToday.positive}%</p>
+              <p>Negative: ${stock.sentimentToday.negative}%</p>
+              <p>Neutral: ${stock.sentimentToday.neutral}%</p>
+          </div>
+          <div class="mb-4">
+              <h3 class="text-lg font-medium">Sentiment Analysis (Last 20 Trading Days)</h3>
+              <p>Overall Score: ${stock.sentimentAverage.score} (${stock.sentimentAverage.classification})</p>
+              <p>Positive: ${stock.sentimentAverage.positive}%</p>
+              <p>Negative: ${stock.sentimentAverage.negative}%</p>
+              <p>Neutral: ${stock.sentimentAverage.neutral}%</p>
+          </div>
+      `;
+      results.appendChild(stockDiv);
   }
 
   loginBtn.addEventListener('click', async () => {
@@ -333,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
   analyzeBtn.addEventListener('click', () => {
     const input = symbolInput.value.trim();
     const symbols = input ? input.split(',').map(s => s.trim().toUpperCase()).filter(s => s) : [];
-    analyzeSymbols(symbols);
+    startOrStopAnalysis(symbols);
   });
 
   addWatchlistBtn.addEventListener('click', () => {
@@ -343,12 +388,74 @@ document.addEventListener('DOMContentLoaded', () => {
 
   analyzeWatchlistBtn.addEventListener('click', () => {
     if (watchlist.length > 0) {
-      analyzeSymbols(watchlist);
+      startOrStopAnalysis(watchlist);
     } else {
       error.classList.remove('hidden');
       error.textContent = 'Watchlist is empty. Add symbols first.';
     }
   });
+
+  stopAnalysisBtn.addEventListener('click', stopAnalysis);
+
+  function startOrStopAnalysis(symbolsToAnalyze) {
+    if (analysisIntervalId) {
+      stopAnalysis();
+      return;
+    }
+
+    const intervalMinutes = parseFloat(intervalInput.value);
+    if (isNaN(intervalMinutes) || intervalMinutes < 1) {
+      error.classList.remove('hidden');
+      error.textContent = 'Please enter a valid interval in minutes (minimum 1).';
+      return;
+    }
+
+    analyzeSymbols(symbolsToAnalyze);
+
+    analysisIntervalId = setInterval(() => {
+      analyzeSymbols(symbolsToAnalyze);
+    }, intervalMinutes * 60 * 1000);
+
+    stopAnalysisBtn.classList.remove('hidden');
+    analyzeBtn.textContent = 'Restart Analysis';
+    analyzeWatchlistBtn.textContent = 'Restart Watchlist Analysis';
+    startCountdown(intervalMinutes * 60);
+  }
+
+  function stopAnalysis() {
+    if (analysisIntervalId) {
+      clearInterval(analysisIntervalId);
+      analysisIntervalId = null;
+      stopAnalysisBtn.classList.add('hidden');
+      analyzeBtn.textContent = 'Analyze';
+      analyzeWatchlistBtn.textContent = 'Analyze Watchlist';
+      error.classList.add('hidden'); // Clear any analysis-related errors
+      loading.classList.add('hidden'); // Hide loading indicator
+      stopCountdown();
+    }
+  }
+
+  function startCountdown(duration) {
+    timeLeft = duration;
+    countdownTimer.classList.remove('hidden');
+    countdownTimer.textContent = `Next analysis in ${timeLeft} seconds`;
+
+    countdownIntervalId = setInterval(() => {
+      timeLeft--;
+      if (timeLeft <= 0) {
+        timeLeft = duration; // Reset for the next cycle
+      }
+      countdownTimer.textContent = `Next analysis in ${timeLeft} seconds`;
+    }, 1000);
+  }
+
+  function stopCountdown() {
+    if (countdownIntervalId) {
+      clearInterval(countdownIntervalId);
+      countdownIntervalId = null;
+      countdownTimer.classList.add('hidden');
+    }
+  }
 
   watchlistDiv.addEventListener('click', (e) => {
     if (e.target.classList.contains('remove-watchlist-btn')) {
@@ -360,6 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Initial check for logged-in status and UI update
   if (localStorage.getItem('token')) {
     fetch('/user', {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
