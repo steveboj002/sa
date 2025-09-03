@@ -160,12 +160,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  async function analyzeSymbols(symbols) {
+  async function analyzeSymbols(symbols, duration = 0) {
     loading.classList.remove('hidden');
     error.classList.add('hidden');
     results.classList.add('hidden');
     results.innerHTML = '';
     error.textContent = '';
+    stopCountdown(); // Stop countdown when analysis starts
 
     if (symbols.length === 0 || symbols.some(s => !/^[A-Z]{1,5}$/.test(s))) {
       loading.classList.add('hidden');
@@ -209,6 +210,9 @@ document.addEventListener('DOMContentLoaded', () => {
       error.textContent = 'Error connecting to server. Please try again.';
     } finally {
       loading.classList.add('hidden');
+      if (analysisIntervalId) {
+        startCountdown(duration); // Restart countdown if continuous analysis is active
+      }
     }
   }
 
@@ -410,10 +414,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    analyzeSymbols(symbolsToAnalyze);
+    analyzeSymbols(symbolsToAnalyze, intervalMinutes * 60);
 
     analysisIntervalId = setInterval(() => {
-      analyzeSymbols(symbolsToAnalyze);
+      analyzeSymbols(symbolsToAnalyze, intervalMinutes * 60);
     }, intervalMinutes * 60 * 1000);
 
     stopAnalysisBtn.classList.remove('hidden');
@@ -436,16 +440,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function startCountdown(duration) {
+    if (countdownIntervalId) {
+      clearInterval(countdownIntervalId);
+    }
     timeLeft = duration;
     countdownTimer.classList.remove('hidden');
     countdownTimer.textContent = `Next analysis in ${timeLeft} seconds`;
 
     countdownIntervalId = setInterval(() => {
       timeLeft--;
-      if (timeLeft <= 0) {
-        timeLeft = duration; // Reset for the next cycle
+      if (timeLeft < 0) {
+        clearInterval(countdownIntervalId);
+        countdownIntervalId = null;
+      } else {
+        countdownTimer.textContent = `Next analysis in ${timeLeft} seconds`;
       }
-      countdownTimer.textContent = `Next analysis in ${timeLeft} seconds`;
     }, 1000);
   }
 
