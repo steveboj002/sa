@@ -3,8 +3,11 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const sqlite3 = require('sqlite3').verbose();
 const { analyzeStock } = require('./stock-analysis');
+const nodemailer = require('nodemailer');
 const app = express();
 const port = 3000;
+
+require('dotenv').config();
 
 app.use(express.json());
 app.use(express.static('public'));
@@ -13,6 +16,15 @@ const db = new sqlite3.Database('database.db');
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY;
 const POLYGON_API_KEY = process.env.POLYGON_API_KEY;
+
+// Nodemailer transporter setup
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER, // Your Gmail address
+    pass: process.env.GMAIL_PASS  // Your Gmail app password
+  }
+});
 
 db.serialize(() => {
   db.run('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT)');
@@ -128,7 +140,26 @@ app.post('/analyze', authenticateToken, async (req, res) => {
   }
 });
 
+app.post('/send-alert-email', authenticateToken, async (req, res) => {
+  const { recipientEmail, subject, body } = req.body;
 
+  if (!recipientEmail || !subject || !body) {
+    return res.status(400).json({ error: 'Recipient email, subject, and body are required.' });
+  }
+
+  try {
+    await transporter.sendMail({
+      from: process.env.GMAIL_USER, // Sender address
+      to: recipientEmail,          // List of receivers
+      subject: subject,             // Subject line
+      html: body                    // HTML body content
+    });
+    res.json({ message: 'Email alert sent successfully.' });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).json({ error: 'Failed to send email alert.' });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);

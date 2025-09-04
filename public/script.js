@@ -29,11 +29,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const intervalInput = document.getElementById('interval');
   const stopAnalysisBtn = document.getElementById('stop-analysis-btn');
   const countdownTimer = document.getElementById('countdown-timer');
+  const alertEmailInput = document.getElementById('alertEmail');
 
   let watchlist = [];
   let analysisIntervalId = null;
   let countdownIntervalId = null;
   let timeLeft = 0;
+  const alertCooldownMinutes = 5; // Cooldown period for alerts in minutes
+  const lastAlertSent = {}; // Stores timestamps of last sent alerts: { symbol_type: timestamp }
 
   function updateAuthUI(isLoggedIn, username) {
     loginForm.classList.toggle('hidden', isLoggedIn);
@@ -229,23 +232,47 @@ document.addEventListener('DOMContentLoaded', () => {
       let ma50ColorClass = '';
       if (!isNaN(percent50Day) && percent50Day >= -tolerance && percent50Day <= tolerance) {
           ma50ColorClass = 'text-green-600 font-semibold';
+          triggerAlert(
+            stock.symbol,
+            'MA50',
+            `Percent from 50-Day MA Alert: ${percent50Day}% within ${tolerance}%`,
+            `<p>Stock: ${stock.symbol}</p><p>Percent from 50-Day MA: ${percent50Day}%</p><p>Tolerance: ${tolerance}%</p>`
+          );
       }
 
       let ma200ColorClass = '';
       if (!isNaN(percent200Day) && percent200Day >= -tolerance && percent200Day <= tolerance) {
           ma200ColorClass = 'text-green-600 font-semibold';
+          triggerAlert(
+            stock.symbol,
+            'MA200',
+            `Percent from 200-Day MA Alert: ${percent200Day}% within ${tolerance}%`,
+            `<p>Stock: ${stock.symbol}</p><p>Percent from 200-Day MA: ${percent200Day}%</p><p>Tolerance: ${tolerance}%</p>`
+          );
       }
 
       let volumeComparisonColorClass = '';
       const volumeComparison = parseFloat(stock.quote?.volumeComparison);
       if (!isNaN(volumeComparison) && Math.abs(volumeComparison) > volumeTolerance) {
           volumeComparisonColorClass = 'text-green-600 font-semibold';
+          triggerAlert(
+            stock.symbol,
+            'Volume',
+            `Volume Comparison Alert: ${volumeComparison}% > ${volumeTolerance}%`,
+            `<p>Stock: ${stock.symbol}</p><p>Volume Comparison to 20-Day Average: ${volumeComparison}%</p><p>Tolerance: ${volumeTolerance}%</p>`
+          );
       }
 
       let priceChangeColorClass = '';
       const changePercent = parseFloat(stock.quote?.changePercent);
       if (!isNaN(changePercent) && Math.abs(changePercent) > priceChangeTolerance) {
           priceChangeColorClass = 'text-green-600 font-semibold';
+          triggerAlert(
+            stock.symbol,
+            'PriceChange',
+            `Price Change Alert: ${changePercent}% > ${priceChangeTolerance}%`,
+            `<p>Stock: ${stock.symbol}</p><p>Percent Change: ${changePercent}%</p><p>Tolerance: ${priceChangeTolerance}%</p>`
+          );
       }
 
       stockDiv.innerHTML = `
@@ -463,6 +490,68 @@ document.addEventListener('DOMContentLoaded', () => {
       clearInterval(countdownIntervalId);
       countdownIntervalId = null;
       countdownTimer.classList.add('hidden');
+    }
+  }
+
+  async function sendEmailAlert(symbol, subject, body) {
+    const recipientEmail = alertEmailInput.value.trim();
+    if (!recipientEmail) {
+      console.warn('No recipient email provided for alert.');
+      return;
+    }
+
+    // Basic email validation
+    if (!/^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,6}$/.test(recipientEmail)) {
+      console.error('Invalid email format for alert recipient.');
+      error.classList.remove('hidden');
+      error.textContent = 'Invalid email format for alert recipient.';
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No authentication token found for sending email alert.');
+        error.classList.remove('hidden');
+        error.textContent = 'Authentication required to send email alerts.';
+        return;
+      }
+
+      const response = await fetch('/send-alert-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ recipientEmail, subject, body: `${body}<br/><br/>This alert was triggered for ${symbol}.` })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        console.error('Failed to send email alert:', data.error);
+        error.classList.remove('hidden');
+        error.textContent = `Failed to send email alert for ${symbol}: ${data.error}`;
+      } else {
+        console.log(`Email alert sent successfully for ${symbol}`);
+      }
+    } catch (err) {
+      console.error('Error sending email alert:', err);
+      error.classList.remove('hidden');
+      error.textContent = `Error sending email alert for ${symbol}.`;
+    }
+  }
+
+  function triggerAlert(symbol, type, subject, body) {
+    const alertKey = `${symbol}_${type}`;
+    const now = new Date().getTime();
+    const lastSent = lastAlertSent[alertKey] || 0;
+    const cooldownMillis = alertCooldownMinutes * 60 * 1000;
+
+    if (now - lastSent > cooldownMillis) {
+      sendEmailAlert(symbol, subject, body);
+      lastAlertSent[alertKey] = now;
+    } else {
+      console.log(`Alert for ${symbol} (${type}) throttled. Next alert in ${Math.ceil((cooldownMillis - (now - lastSent)) / 1000)} seconds.`);
     }
   }
 
