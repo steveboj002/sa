@@ -5,7 +5,7 @@ const sqlite3 = require('sqlite3').verbose();
 const { analyzeStock } = require('./stock-analysis');
 const nodemailer = require('nodemailer');
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 require('dotenv').config();
 
