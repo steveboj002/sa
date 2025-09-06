@@ -112,14 +112,18 @@ app.post('/watchlist/remove', authenticateToken, (req, res) => {
 });
 
 app.post('/analyze', authenticateToken, async (req, res) => {
-  const { symbols } = req.query;
+  const symbolsParam = req.query.symbols;
   const provider = req.query.provider || 'alpha_vantage';
   const lookbackDays = parseInt(req.query.lookbackDays || '1', 10); // Default to 1 day
 
-  if (!symbols || !Array.isArray(symbols.split(','))) {
+  console.log(`[Server] Received symbolsParam: ${symbolsParam}`);
+  console.log(`[Server] Received provider: ${provider}`);
+  console.log(`[Server] Received lookbackDays: ${lookbackDays}`);
+
+  if (!symbolsParam) {
     return res.status(400).json({ error: 'Symbols parameter is required' });
   }
-  const symbolArray = symbols.split(',').map(s => s.trim().toUpperCase()).filter(s => /^[A-Z]{1,5}$/.test(s));
+  const symbolArray = symbolsParam.split(',').map(s => s.trim().toUpperCase()).filter(s => /^[A-Z]{1,5}$/.test(s));
   if (symbolArray.length === 0) {
     return res.status(400).json({ error: 'No valid symbols provided' });
   }
@@ -136,8 +140,10 @@ app.post('/analyze', authenticateToken, async (req, res) => {
         return { symbol, error: error.message };
       }
     }));
+    console.log(`[Server] Sending analysis results: ${JSON.stringify(results.map(r => r.symbol), null, 2)}`);
     res.json(results);
   } catch (error) {
+    console.error('[Server] Error in /analyze route:', error);
     res.status(500).json({ error: 'Error processing analysis' });
   }
 });

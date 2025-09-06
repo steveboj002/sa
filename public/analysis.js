@@ -1,20 +1,14 @@
+import { updateAuthUI, fetchWatchlist, addToWatchlist, removeFromWatchlist, startCountdown, stopCountdown, countdownIntervalId, watchlist, lastAlertSent, mutedUntil, triggerAlert } from './utils.js';
+// import { initLogin } from './login.js'; // Re-add import for initLogin
+// import { initSignup } from './signup.js'; // Re-add import for initSignup
+
 document.addEventListener('DOMContentLoaded', () => {
   const symbolInput = document.getElementById('symbol');
   const analyzeBtn = document.getElementById('analyze-btn');
   const addWatchlistBtn = document.getElementById('add-watchlist-btn');
   const analyzeWatchlistBtn = document.getElementById('analyze-watchlist-btn');
-  const loginForm = document.getElementById('login-form');
-  const signupForm = document.getElementById('signup-form');
   const userSection = document.getElementById('user-section');
-  const loginBtn = document.getElementById('login-btn');
-  const signupBtn = document.getElementById('signup-btn');
   const logoutBtn = document.getElementById('logout-btn');
-  const showLoginBtn = document.getElementById('show-login-btn');
-  const showSignupBtn = document.getElementById('show-signup-btn');
-  const loginUsername = document.getElementById('login-username');
-  const loginPassword = document.getElementById('login-password');
-  const signupUsername = document.getElementById('signup-username');
-  const signupPassword = document.getElementById('signup-password');
   const userGreeting = document.getElementById('user-greeting');
   const analysisSection = document.getElementById('analysis-section');
   const watchlistSection = document.getElementById('watchlist-section');
@@ -38,140 +32,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const muteMa200CrossoverUpAlertsCheckbox = document.getElementById('muteMa200CrossoverUpAlerts');
   const muteMa200CrossoverDownAlertsCheckbox = document.getElementById('muteMa200CrossoverDownAlerts');
 
-  let watchlist = [];
+  // let watchlist = []; // This should be managed in utils.js if shared, otherwise local
   let analysisIntervalId = null;
-  let countdownIntervalId = null;
-  let timeLeft = 0;
+  // let countdownIntervalId = null; // Moved to utils.js
+  // let timeLeft = 0; // Moved to utils.js
   // const alertCooldownMinutes = 5; // Now configured via UI
-  const lastAlertSent = {}; // Stores timestamps of last sent alerts: { symbol_type: timestamp }
-  const mutedUntil = {}; // Stores timestamps until an alert type for a symbol is muted: { symbol_alertType: unmuteTimestamp }
+  // const lastAlertSent = {}; // Stores timestamps of last sent alerts: { symbol_type: timestamp } - Moved to utils.js
+  // const mutedUntil = {}; // Stores timestamps until an alert type for a symbol is muted: { symbol_alertType: unmuteTimestamp } - Moved to utils.js
 
-  function updateAuthUI(isLoggedIn, username) {
-    loginForm.classList.toggle('hidden', isLoggedIn);
-    signupForm.classList.add('hidden');
-    userSection.classList.toggle('hidden', !isLoggedIn);
-    analysisSection.classList.toggle('hidden', !isLoggedIn);
-    watchlistSection.classList.toggle('hidden', !isLoggedIn);
-    if (isLoggedIn) {
-      userGreeting.textContent = `Logged in as ${username}`;
-      symbolInput.value = '';
-      loginUsername.value = '';
-      loginPassword.value = '';
-      signupUsername.value = '';
-      signupPassword.value = '';
-      error.classList.add('hidden');
-      fetchWatchlist();
-    } else {
-      watchlist = [];
-      renderWatchlist();
-      // loginUsername.value = ''; // Temporarily commented out for pre-population
-      // loginPassword.value = ''; // Temporarily commented out for pre-population
-      signupUsername.value = '';
-      signupPassword.value = '';
-      error.classList.add('hidden');
-    }
-  }
+  // function updateAuthUI(isLoggedIn, username) { ... } // Moved to utils.js
+  // function renderWatchlist() { ... } // Moved to utils.js
+  // async function fetchWatchlist() { ... } // Moved to utils.js
+  // async function addToWatchlist(input) { ... } // Moved to utils.js
+  // async function removeFromWatchlist(symbol) { ... } // Moved to utils.js
 
-  function renderWatchlist() {
-    watchlistDiv.innerHTML = '';
-    if (watchlist.length === 0) {
-      watchlistDiv.innerHTML = '<p class="text-gray-500">No symbols in watchlist.</p>';
-    } else {
-      watchlist.forEach(symbol => {
-        const symbolDiv = document.createElement('div');
-        symbolDiv.className = 'flex items-center bg-gray-200 px-2 py-1 rounded';
-        symbolDiv.innerHTML = `
-          <span class="mr-2">${symbol}</span>
-          <button class="analyze-single-btn text-blue-500 hover:text-blue-700 mr-2" data-symbol="${symbol}">Analyze</button>
-          <button class="remove-watchlist-btn text-red-500 hover:text-red-700" data-symbol="${symbol}">Remove</button>
-        `;
-        watchlistDiv.appendChild(symbolDiv);
-      });
-    }
-    analyzeWatchlistBtn.classList.toggle('hidden', watchlist.length === 0);
-  }
-
-  async function fetchWatchlist() {
-    try {
-      const response = await fetch('/watchlist', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      const data = await response.json();
-      if (response.ok) {
-        watchlist = data.watchlist || [];
-        renderWatchlist();
-      } else {
-        error.classList.remove('hidden');
-        error.textContent = data.error || 'Failed to fetch watchlist.';
-      }
-    } catch (err) {
-      error.classList.remove('hidden');
-      error.textContent = 'Error connecting to server.';
-    }
-  }
-
-  async function addToWatchlist(input) {
-    const symbols = input ? input.split(',').map(s => s.trim().toUpperCase()).filter(s => s) : [];
-    if (symbols.length === 0 || symbols.some(s => !/^[A-Z]{1,5}$/.test(s))) {
-      error.classList.remove('hidden');
-      error.textContent = 'Please enter valid stock symbols (1-5 uppercase letters, separated by commas, e.g., NVDA,ASTS).';
-      return false;
-    }
-    try {
-      const response = await fetch('/watchlist/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ symbols })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        watchlist = data.watchlist;
-        renderWatchlist();
-        error.classList.remove('hidden');
-        error.textContent = `Added ${symbols.filter(s => !data.existing.includes(s)).join(', ')} to watchlist.`;
-        return true;
-      } else {
-        error.classList.remove('hidden');
-        error.textContent = data.error || 'Failed to add to watchlist.';
-        return false;
-      }
-    } catch (err) {
-      error.classList.remove('hidden');
-      error.textContent = 'Error connecting to server.';
-      return false;
-    }
-  }
-
-  async function removeFromWatchlist(symbol) {
-    try {
-      const response = await fetch('/watchlist/remove', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ symbol })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        watchlist = data.watchlist;
-        renderWatchlist();
-        error.classList.remove('hidden');
-        error.textContent = `Removed ${symbol} from watchlist.`;
-      } else {
-        error.classList.remove('hidden');
-        error.textContent = data.error || 'Failed to remove from watchlist.';
-      }
-    } catch (err) {
-      error.classList.remove('hidden');
-      error.textContent = 'Error connecting to server.';
-    }
-  }
-
-  async function analyzeSymbols(symbols, duration = 0) {
+  async function analyzeSymbols(symbols, duration = 0, lookbackDays = 1) {
     loading.classList.remove('hidden');
     error.classList.add('hidden');
     results.classList.add('hidden');
@@ -192,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
       error.textContent = 'Please enter a valid interval in minutes (minimum 1).';
       return;
     }
-    const lookbackDays = parseFloat(crossoverLookbackDaysInput.value);
+    lookbackDays = parseFloat(crossoverLookbackDaysInput.value);
     if (isNaN(lookbackDays) || lookbackDays < 1 || lookbackDays > 365) {
         error.classList.remove('hidden');
         error.textContent = 'Please enter a valid number of lookback days (1-365).';
@@ -210,7 +85,34 @@ document.addEventListener('DOMContentLoaded', () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      const data = await response.json();
+
+      console.log('[Frontend] Raw response object:', response);
+      console.log('[Frontend] Response status:', response.status, response.statusText);
+      console.log('[Frontend] Is response.ok:', response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Frontend] Server responded with an error status:', response.status, errorText);
+        error.classList.remove('hidden');
+        error.textContent = `Server error (${response.status}): ${errorText || 'Unknown error'}`; // Display server error message
+        loading.classList.add('hidden');
+        return; // Exit function if response is not ok
+      }
+
+      const responseText = await response.text(); // Read raw response text
+      console.log('[Frontend] Raw response text:', responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText); // Manually parse JSON
+        console.log('[Frontend] Parsed JSON data:', data);
+      } catch (jsonError) {
+        console.error('[Frontend] Error parsing JSON response:', jsonError, responseText);
+        error.classList.remove('hidden');
+        error.textContent = `Error: Invalid JSON response from server. Details: ${jsonError.message}`;
+        loading.classList.add('hidden');
+        return;
+      }
 
       if (response.ok) {
         data.forEach(result => {
@@ -233,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
         error.textContent = data.error || 'Failed to fetch data. Check symbols or API key.';
       }
     } catch (err) {
+      console.error('[Frontend] Error connecting to server or processing response:', err);
       error.classList.remove('hidden');
       error.textContent = 'Error connecting to server. Please try again.';
     } finally {
@@ -408,55 +311,8 @@ document.addEventListener('DOMContentLoaded', () => {
       results.appendChild(stockDiv);
   }
 
-  loginBtn.addEventListener('click', async () => {
-    const username = loginUsername.value.trim();
-    const password = loginPassword.value;
-    try {
-      const response = await fetch('/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        localStorage.setItem('token', data.token);
-        updateAuthUI(true, username);
-        error.classList.remove('hidden');
-        error.textContent = `Logged in as ${username}`;
-      } else {
-        error.classList.remove('hidden');
-        error.textContent = data.error || 'Login failed.';
-      }
-    } catch (err) {
-      error.classList.remove('hidden');
-      error.textContent = 'Error connecting to server.';
-    }
-  });
-
-  signupBtn.addEventListener('click', async () => {
-    const username = signupUsername.value.trim();
-    const password = signupPassword.value;
-    try {
-      const response = await fetch('/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        localStorage.setItem('token', data.token);
-        updateAuthUI(true, username);
-        error.classList.remove('hidden');
-        error.textContent = `Signed up and logged in as ${username}`;
-      } else {
-        error.classList.remove('hidden');
-        error.textContent = data.error || 'Signup failed.';
-      }
-    } catch (err) {
-      error.classList.remove('hidden');
-      error.textContent = 'Error connecting to server.';
-    }
-  });
+  // loginBtn.addEventListener('click', async () => { ... }) // Moved to login.js
+  // signupBtn.addEventListener('click', async () => { ... }) // Moved to signup.js
 
   logoutBtn.addEventListener('click', async () => {
     try {
@@ -480,21 +336,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  showLoginBtn.addEventListener('click', () => {
-    signupForm.classList.add('hidden');
-    loginForm.classList.remove('hidden');
-    loginUsername.value = '';
-    loginPassword.value = '';
-    error.classList.add('hidden');
-  });
-
-  showSignupBtn.addEventListener('click', () => {
-    loginForm.classList.add('hidden');
-    signupForm.classList.remove('hidden');
-    signupUsername.value = '';
-    signupPassword.value = '';
-    error.classList.add('hidden');
-  });
+  // showLoginBtn.addEventListener('click', () => { ... }) // Moved to login.js
+  // showSignupBtn.addEventListener('click', () => { ... }) // Moved to signup.js
 
   analyzeBtn.addEventListener('click', () => {
     const input = symbolInput.value.trim();
@@ -562,128 +405,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function startCountdown(duration) {
-    if (countdownIntervalId) {
-      clearInterval(countdownIntervalId);
-    }
-    timeLeft = duration;
-    countdownTimer.classList.remove('hidden');
-    countdownTimer.textContent = `Next analysis in ${timeLeft} seconds`;
-
-    countdownIntervalId = setInterval(() => {
-      timeLeft--;
-      if (timeLeft < 0) {
-        clearInterval(countdownIntervalId);
-        countdownIntervalId = null;
-      } else {
-        countdownTimer.textContent = `Next analysis in ${timeLeft} seconds`;
-      }
-    }, 1000);
-  }
-
-  function stopCountdown() {
-    if (countdownIntervalId) {
-      clearInterval(countdownIntervalId);
-      countdownIntervalId = null;
-      countdownTimer.classList.add('hidden');
-    }
-  }
-
-  async function sendEmailAlert(symbol, subject, body) {
-    const recipientEmail = alertEmailInput.value.trim();
-    if (!recipientEmail) {
-      console.warn('No recipient email provided for alert.');
-      return;
-    }
-
-    // Basic email validation
-    if (!/^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,6}$/.test(recipientEmail)) {
-      console.error('Invalid email format for alert recipient.');
-      error.classList.remove('hidden');
-      error.textContent = 'Invalid email format for alert recipient.';
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No authentication token found for sending email alert.');
-        error.classList.remove('hidden');
-        error.textContent = 'Authentication required to send email alerts.';
-        return;
-      }
-
-      const now = new Date();
-      const dateTimeString = now.toLocaleString(); // e.g., "10/27/2023, 10:30:00 AM"
-      const fullSubject = `${dateTimeString} - ${subject}`;
-
-      const response = await fetch('/send-alert-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ recipientEmail, subject: fullSubject, body: `${body}<br/><br/>This alert was triggered for ${symbol}.` })
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        console.error('Failed to send email alert:', data.error);
-        error.classList.remove('hidden');
-        error.textContent = `Failed to send email alert for ${symbol}: ${data.error}`;
-      } else {
-        console.log(`Email alert sent successfully for ${symbol}`);
-      }
-    } catch (err) {
-      console.error('Error sending email alert:', err);
-      error.classList.remove('hidden');
-      error.textContent = `Error sending email alert for ${symbol}.`;
-    }
-  }
-
-  function triggerAlert(symbol, type, muteCheckboxState, subject, body) {
-    const alertKey = `${symbol}_${type}`;
-    const now = new Date().getTime();
-    const lastSent = lastAlertSent[alertKey] || 0;
-    const alertCooldownSeconds = parseFloat(alertCooldownInput.value);
-    const cooldownMillis = (isNaN(alertCooldownSeconds) || alertCooldownSeconds < 1) ? (5 * 60 * 1000) : (alertCooldownSeconds * 1000);
-
-    // Check if this specific alert type for this symbol is currently muted
-    const isCurrentlyMuted = mutedUntil[alertKey] && mutedUntil[alertKey] > now;
-
-    if (isCurrentlyMuted) {
-      // If the user has explicitly turned OFF the mute checkbox, then unmute it now
-      if (!muteCheckboxState) {
-        delete mutedUntil[alertKey];
-        delete lastAlertSent[alertKey]; // Clear cooldown when manually unmuted
-        console.log(`Alert for ${symbol} (${type}) manually unmuted.`);
-      } else {
-        // Still muted, and user wants it muted (checkbox checked)
-        console.log(`Alert for ${symbol} (${type}) is muted until ${new Date(mutedUntil[alertKey]).toLocaleTimeString()}.`);
-        return; // Do not send email
-      }
-    }
-
-    // Proceed with cooldown check
-    if (now - lastSent > cooldownMillis) {
-      sendEmailAlert(symbol, subject, body);
-      lastAlertSent[alertKey] = now;
-
-      // If the email was sent, and user has the mute checkbox checked, then mute until tomorrow
-      if (muteCheckboxState) {
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          tomorrow.setHours(0, 0, 0, 0); // Set to midnight tomorrow UTC
-          mutedUntil[alertKey] = tomorrow.getTime();
-          console.log(`Alert for ${symbol} (${type}) muted until tomorrow: ${tomorrow.toLocaleDateString()} ${tomorrow.toLocaleTimeString()}`);
-      } else {
-          // If the checkbox is unchecked, ensure it's not marked as muted (in case it was previously muted and then the checkbox was unchecked)
-          delete mutedUntil[alertKey];
-      }
-    } else {
-      console.log(`Alert for ${symbol} (${type}) throttled. Next alert in ${Math.ceil((cooldownMillis - (now - lastSent)) / 1000)} seconds.`);
-    }
-  }
+  // function startCountdown(duration) { ... } // Moved to utils.js
+  // function stopCountdown() { ... } // Moved to utils.js
+  // async function sendEmailAlert(symbol, subject, body) { ... } // Moved to utils.js
+  // function triggerAlert(symbol, type, muteCheckboxState, subject, body) { ... } // Moved to utils.js
 
   watchlistDiv.addEventListener('click', (e) => {
     if (e.target.classList.contains('remove-watchlist-btn')) {
@@ -715,6 +440,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   } else {
     updateAuthUI(false);
-    loginForm.classList.remove('hidden');
   }
+  
+  // Initialize login and signup functionality
+  // initLogin(); 
+  // initSignup();
 });

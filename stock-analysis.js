@@ -693,6 +693,8 @@ async function analyzeStock(symbol, apiKey, provider, lookbackDays = 1) {
     result.newsError = newsDataResult.error || 'No news sentiment data available';
   }
 
+  console.log(`[${symbol}] Final analyzeStock result:`, JSON.stringify(result, null, 2));
+
   return result;
 }
 
