@@ -30,13 +30,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const stopAnalysisBtn = document.getElementById('stop-analysis-btn');
   const countdownTimer = document.getElementById('countdown-timer');
   const alertEmailInput = document.getElementById('alertEmail');
+  const muteMaAlertsCheckbox = document.getElementById('muteMaAlerts');
+  const muteVolumeAlertsCheckbox = document.getElementById('muteVolumeAlerts');
+  const mutePriceChangeAlertsCheckbox = document.getElementById('mutePriceChangeAlerts');
+  const alertCooldownInput = document.getElementById('alertCooldown');
 
   let watchlist = [];
   let analysisIntervalId = null;
   let countdownIntervalId = null;
   let timeLeft = 0;
-  const alertCooldownMinutes = 5; // Cooldown period for alerts in minutes
+  // const alertCooldownMinutes = 5; // Now configured via UI
   const lastAlertSent = {}; // Stores timestamps of last sent alerts: { symbol_type: timestamp }
+  const mutedUntil = {}; // Stores timestamps until an alert type for a symbol is muted: { symbol_alertType: unmuteTimestamp }
 
   function updateAuthUI(isLoggedIn, username) {
     loginForm.classList.toggle('hidden', isLoggedIn);
@@ -235,6 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
           triggerAlert(
             stock.symbol,
             'MA50',
+            muteMaAlertsCheckbox.checked,
             `Percent from 50-Day MA Alert: ${percent50Day}% within ${tolerance}%`,
             `<p>Stock: ${stock.symbol}</p><p>Percent from 50-Day MA: ${percent50Day}%</p><p>Tolerance: ${tolerance}%</p>`
           );
@@ -246,6 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
           triggerAlert(
             stock.symbol,
             'MA200',
+            muteMaAlertsCheckbox.checked,
             `Percent from 200-Day MA Alert: ${percent200Day}% within ${tolerance}%`,
             `<p>Stock: ${stock.symbol}</p><p>Percent from 200-Day MA: ${percent200Day}%</p><p>Tolerance: ${tolerance}%</p>`
           );
@@ -258,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
           triggerAlert(
             stock.symbol,
             'Volume',
+            muteVolumeAlertsCheckbox.checked,
             `Volume Comparison Alert: ${volumeComparison}% > ${volumeTolerance}%`,
             `<p>Stock: ${stock.symbol}</p><p>Volume Comparison to 20-Day Average: ${volumeComparison}%</p><p>Tolerance: ${volumeTolerance}%</p>`
           );
@@ -270,6 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
           triggerAlert(
             stock.symbol,
             'PriceChange',
+            mutePriceChangeAlertsCheckbox.checked,
             `Price Change Alert: ${changePercent}% > ${priceChangeTolerance}%`,
             `<p>Stock: ${stock.symbol}</p><p>Percent Change: ${changePercent}%</p><p>Tolerance: ${priceChangeTolerance}%</p>`
           );
@@ -517,13 +526,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      const now = new Date();
+      const dateTimeString = now.toLocaleString(); // e.g., "10/27/2023, 10:30:00 AM"
+      const fullSubject = `${dateTimeString} - ${subject}`;
+
       const response = await fetch('/send-alert-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ recipientEmail, subject, body: `${body}<br/><br/>This alert was triggered for ${symbol}.` })
+        body: JSON.stringify({ recipientEmail, subject: fullSubject, body: `${body}<br/><br/>This alert was triggered for ${symbol}.` })
       });
 
       const data = await response.json();
@@ -541,15 +554,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function triggerAlert(symbol, type, subject, body) {
+  function triggerAlert(symbol, type, muteCheckboxState, subject, body) {
     const alertKey = `${symbol}_${type}`;
     const now = new Date().getTime();
     const lastSent = lastAlertSent[alertKey] || 0;
-    const cooldownMillis = alertCooldownMinutes * 60 * 1000;
+    const alertCooldownSeconds = parseFloat(alertCooldownInput.value);
+    const cooldownMillis = (isNaN(alertCooldownSeconds) || alertCooldownSeconds < 1) ? (5 * 60 * 1000) : (alertCooldownSeconds * 1000);
 
+    // Check if this specific alert type for this symbol is currently muted
+    const isCurrentlyMuted = mutedUntil[alertKey] && mutedUntil[alertKey] > now;
+
+    if (isCurrentlyMuted) {
+      // If the user has explicitly turned OFF the mute checkbox, then unmute it now
+      if (!muteCheckboxState) {
+        delete mutedUntil[alertKey];
+        console.log(`Alert for ${symbol} (${type}) manually unmuted.`);
+      } else {
+        // Still muted, and user wants it muted (checkbox checked)
+        console.log(`Alert for ${symbol} (${type}) is muted until ${new Date(mutedUntil[alertKey]).toLocaleTimeString()}.`);
+        return; // Do not send email
+      }
+    }
+
+    // Proceed with cooldown check
     if (now - lastSent > cooldownMillis) {
       sendEmailAlert(symbol, subject, body);
       lastAlertSent[alertKey] = now;
+
+      // If the email was sent, and user has the mute checkbox checked, then mute until tomorrow
+      if (muteCheckboxState) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          tomorrow.setHours(0, 0, 0, 0); // Set to midnight tomorrow UTC
+          mutedUntil[alertKey] = tomorrow.getTime();
+          console.log(`Alert for ${symbol} (${type}) muted until tomorrow: ${tomorrow.toLocaleDateString()} ${tomorrow.toLocaleTimeString()}`);
+      } else {
+          // If the checkbox is unchecked, ensure it's not marked as muted (in case it was previously muted and then the checkbox was unchecked)
+          delete mutedUntil[alertKey];
+      }
     } else {
       console.log(`Alert for ${symbol} (${type}) throttled. Next alert in ${Math.ceil((cooldownMillis - (now - lastSent)) / 1000)} seconds.`);
     }
