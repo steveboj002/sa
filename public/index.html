@@ -102,6 +102,36 @@
         <label for="alertCooldown" class="block text-sm font-medium text-gray-700">Alert Cooldown (seconds):</label>
         <input type="number" id="alertCooldown" value="300" min="1" class="mt-1 block w-full p-2 border rounded">
       </div>
+      <div class="mt-4">
+        <label for="muteMaAlerts" class="inline-flex items-center">
+            <input type="checkbox" id="muteMaAlerts" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <span class="ml-2 text-sm text-gray-700">Mute MA-based Alerts until tomorrow</span>
+        </label>
+    </div>
+    <div class="mt-2">
+        <label for="muteVolumeAlerts" class="inline-flex items-center">
+            <input type="checkbox" id="muteVolumeAlerts" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <span class="ml-2 text-sm text-gray-700">Mute Volume Alerts until tomorrow</span>
+        </label>
+    </div>
+    <div class="mt-2">
+        <label for="mutePriceChangeAlerts" class="inline-flex items-center">
+            <input type="checkbox" id="mutePriceChangeAlerts" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <span class="ml-2 text-sm text-gray-700">Mute Price Change Alerts until tomorrow</span>
+        </label>
+    </div>
+    <div class="mt-2">
+        <label for="muteMa200CrossoverUpAlerts" class="inline-flex items-center">
+            <input type="checkbox" id="muteMa200CrossoverUpAlerts" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <span class="ml-2 text-sm text-gray-700">Mute MA200 Crossover Up Alerts until tomorrow</span>
+        </label>
+    </div>
+    <div class="mt-2">
+        <label for="muteMa200CrossoverDownAlerts" class="inline-flex items-center">
+            <input type="checkbox" id="muteMa200CrossoverDownAlerts" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <span class="ml-2 text-sm text-gray-700">Mute MA200 Crossover Down Alerts until tomorrow</span>
+        </label>
+    </div>
       <button
         id="stop-analysis-btn"
         class="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600 mt-2 hidden"

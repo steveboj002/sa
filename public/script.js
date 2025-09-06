@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const mutePriceChangeAlertsCheckbox = document.getElementById('mutePriceChangeAlerts');
   const alertCooldownInput = document.getElementById('alertCooldown');
   const crossoverLookbackDaysInput = document.getElementById('crossoverLookbackDays');
+  const muteMa200CrossoverUpAlertsCheckbox = document.getElementById('muteMa200CrossoverUpAlerts');
+  const muteMa200CrossoverDownAlertsCheckbox = document.getElementById('muteMa200CrossoverDownAlerts');
 
   let watchlist = [];
   let analysisIntervalId = null;
@@ -290,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
           triggerAlert(
             stock.symbol,
             'MA200_Crossover_Up',
-            muteMaAlertsCheckbox.checked, // Using MA mute for this related alert
+            muteMa200CrossoverUpAlertsCheckbox.checked, // Using specific mute for this related alert
             `ALERT: ${stock.symbol} Price Crossover Above 200-Day MA!`,
             `<p>Stock: ${stock.symbol}</p><p>Previous Close: $${previousClose}</p><p>Current Price: $${currentPrice}</p><p>200-Day MA: $${sma200}</p><p>Action: Price moved from below to above 200-Day MA.</p>`
           );
@@ -307,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
           triggerAlert(
             stock.symbol,
             'MA200_Crossover_Down',
-            muteMaAlertsCheckbox.checked, // Using MA mute for this related alert
+            muteMa200CrossoverDownAlertsCheckbox.checked, // Using specific mute for this related alert
             `ALERT: ${stock.symbol} Price Crossover Below 200-Day MA!`,
             `<p>Stock: ${stock.symbol}</p><p>Previous Close: $${previousClose}</p><p>Current Price: $${currentPrice}</p><p>200-Day MA: $${sma200}</p><p>Action: Price moved from above to below 200-Day MA.</p>`
           );
@@ -318,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
         triggerAlert(
           stock.symbol,
           'MA200_Crossover_Up_Lookback',
-          muteMaAlertsCheckbox.checked, // Using MA mute for this related alert
+          muteMa200CrossoverUpAlertsCheckbox.checked, // Using specific mute for this related alert
           `ALERT: ${stock.symbol} Crossover Above 200-Day MA in last ${lookbackDays} days!`,
           `<p>Stock: ${stock.symbol}</p><p>Action: Price crossed above 200-Day MA within last ${lookbackDays} days.</p>${stock.quote.ma200CrossoverUpDate ? `<p>Date: ${stock.quote.ma200CrossoverUpDate}</p>` : ''}`
         );
@@ -329,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         triggerAlert(
           stock.symbol,
           'MA200_Crossover_Down_Lookback',
-          muteMaAlertsCheckbox.checked, // Using MA mute for this related alert
+          muteMa200CrossoverDownAlertsCheckbox.checked, // Using specific mute for this related alert
           `ALERT: ${stock.symbol} Crossover Below 200-Day MA in last ${lookbackDays} days!`,
           `<p>Stock: ${stock.symbol}</p><p>Action: Price crossed below 200-Day MA within last ${lookbackDays} days.</p>${stock.quote.ma200CrossoverDownDate ? `<p>Date: ${stock.quote.ma200CrossoverDownDate}</p>` : ''}`
         );
