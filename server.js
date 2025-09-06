@@ -114,6 +114,8 @@ app.post('/watchlist/remove', authenticateToken, (req, res) => {
 app.post('/analyze', authenticateToken, async (req, res) => {
   const { symbols } = req.query;
   const provider = req.query.provider || 'alpha_vantage';
+  const lookbackDays = parseInt(req.query.lookbackDays || '1', 10); // Default to 1 day
+
   if (!symbols || !Array.isArray(symbols.split(','))) {
     return res.status(400).json({ error: 'Symbols parameter is required' });
   }
@@ -128,7 +130,7 @@ app.post('/analyze', authenticateToken, async (req, res) => {
   try {
     const results = await Promise.all(symbolArray.map(async symbol => {
       try {
-        const result = await analyzeStock(symbol, apiKey, provider);
+        const result = await analyzeStock(symbol, apiKey, provider, lookbackDays);
         return { symbol, data: result };
       } catch (error) {
         return { symbol, error: error.message };

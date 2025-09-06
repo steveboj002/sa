@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const muteVolumeAlertsCheckbox = document.getElementById('muteVolumeAlerts');
   const mutePriceChangeAlertsCheckbox = document.getElementById('mutePriceChangeAlerts');
   const alertCooldownInput = document.getElementById('alertCooldown');
+  const crossoverLookbackDaysInput = document.getElementById('crossoverLookbackDays');
 
   let watchlist = [];
   let analysisIntervalId = null;
@@ -183,8 +184,24 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const intervalMinutes = parseFloat(intervalInput.value);
+    if (isNaN(intervalMinutes) || intervalMinutes < 1) {
+      error.classList.remove('hidden');
+      error.textContent = 'Please enter a valid interval in minutes (minimum 1).';
+      return;
+    }
+    const lookbackDays = parseFloat(crossoverLookbackDaysInput.value);
+    if (isNaN(lookbackDays) || lookbackDays < 1 || lookbackDays > 365) {
+        error.classList.remove('hidden');
+        error.textContent = 'Please enter a valid number of lookback days (1-365).';
+        return;
+    }
+
+    const apiUrl = `/analyze?symbols=${symbols.join(',')}&provider=${providerSelect.value}&lookbackDays=${lookbackDays}`;
+    console.log('Fetching data from URL:', apiUrl);
+
     try {
-      const response = await fetch(`/analyze?symbols=${symbols.join(',')}&provider=${providerSelect.value}`, {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
           } else {
             const stock = result.data;
-            displayStockData(stock);
+            displayStockData(stock, lookbackDays);
           }
           results.appendChild(resultDiv);
         });
@@ -224,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function displayStockData(stock) {
+  function displayStockData(stock, lookbackDays) {
       const stockDiv = document.createElement('div');
       stockDiv.className = 'bg-white p-4 rounded-lg shadow mb-4';
 
@@ -256,6 +273,66 @@ document.addEventListener('DOMContentLoaded', () => {
             `Percent from 200-Day MA Alert: ${percent200Day}% within ${tolerance}%`,
             `<p>Stock: ${stock.symbol}</p><p>Percent from 200-Day MA: ${percent200Day}%</p><p>Tolerance: ${tolerance}%</p>`
           );
+      }
+
+      // New logic for MA200 Crossover Up alert
+      const currentPrice = parseFloat(stock.quote?.price);
+      const previousClose = parseFloat(stock.quote?.previousClose);
+      const sma200 = parseFloat(stock.quote?.sma200);
+
+      if (
+          !isNaN(currentPrice) &&
+          !isNaN(previousClose) &&
+          !isNaN(sma200) &&
+          previousClose < sma200 &&
+          currentPrice > sma200
+      ) {
+          triggerAlert(
+            stock.symbol,
+            'MA200_Crossover_Up',
+            muteMaAlertsCheckbox.checked, // Using MA mute for this related alert
+            `ALERT: ${stock.symbol} Price Crossover Above 200-Day MA!`,
+            `<p>Stock: ${stock.symbol}</p><p>Previous Close: $${previousClose}</p><p>Current Price: $${currentPrice}</p><p>200-Day MA: $${sma200}</p><p>Action: Price moved from below to above 200-Day MA.</p>`
+          );
+      }
+
+      // New logic for MA200 Crossover Down alert
+      if (
+          !isNaN(currentPrice) &&
+          !isNaN(previousClose) &&
+          !isNaN(sma200) &&
+          previousClose > sma200 &&
+          currentPrice < sma200
+      ) {
+          triggerAlert(
+            stock.symbol,
+            'MA200_Crossover_Down',
+            muteMaAlertsCheckbox.checked, // Using MA mute for this related alert
+            `ALERT: ${stock.symbol} Price Crossover Below 200-Day MA!`,
+            `<p>Stock: ${stock.symbol}</p><p>Previous Close: $${previousClose}</p><p>Current Price: $${currentPrice}</p><p>200-Day MA: $${sma200}</p><p>Action: Price moved from above to below 200-Day MA.</p>`
+          );
+      }
+
+      // New logic for MA200 Crossover Up Lookback alert
+      if (stock.quote?.ma200CrossoverUpLookback) {
+        triggerAlert(
+          stock.symbol,
+          'MA200_Crossover_Up_Lookback',
+          muteMaAlertsCheckbox.checked, // Using MA mute for this related alert
+          `ALERT: ${stock.symbol} Crossover Above 200-Day MA in last ${lookbackDays} days!`,
+          `<p>Stock: ${stock.symbol}</p><p>Action: Price crossed above 200-Day MA within last ${lookbackDays} days.</p>${stock.quote.ma200CrossoverUpDate ? `<p>Date: ${stock.quote.ma200CrossoverUpDate}</p>` : ''}`
+        );
+      }
+
+      // New logic for MA200 Crossover Down Lookback alert
+      if (stock.quote?.ma200CrossoverDownLookback) {
+        triggerAlert(
+          stock.symbol,
+          'MA200_Crossover_Down_Lookback',
+          muteMaAlertsCheckbox.checked, // Using MA mute for this related alert
+          `ALERT: ${stock.symbol} Crossover Below 200-Day MA in last ${lookbackDays} days!`,
+          `<p>Stock: ${stock.symbol}</p><p>Action: Price crossed below 200-Day MA within last ${lookbackDays} days.</p>${stock.quote.ma200CrossoverDownDate ? `<p>Date: ${stock.quote.ma200CrossoverDownDate}</p>` : ''}`
+        );
       }
 
       let volumeComparisonColorClass = '';
@@ -302,6 +379,8 @@ document.addEventListener('DOMContentLoaded', () => {
               <p class="${volumeComparisonColorClass}">Volume Comparison to 20-Day Average: ${volumeComparison || 'N/A'}% ${stock.volumeError ? `<span class="text-red-500">(${stock.volumeError})</span>` : ''}</p>
               <p>Price-Based Sentiment: ${stock.quote?.priceSentiment || 'N/A'}</p>
           </div>
+          ${stock.quote?.ma200CrossoverUpLookback ? `<p class="text-purple-600 font-semibold">MA200 Crossover Up Detected on ${stock.quote.ma200CrossoverUpDate}</p>` : ''}
+          ${stock.quote?.ma200CrossoverDownLookback ? `<p class="text-purple-600 font-semibold">MA200 Crossover Down Detected on ${stock.quote.ma200CrossoverDownDate}</p>` : ''}
           <div class="mb-4">
               <h3 class="text-lg font-medium">Mention Counts</h3>
               ${stock.newsError ? `<p class="text-red-500">News Error: ${stock.newsError}</p>` : ''}
@@ -449,11 +528,17 @@ document.addEventListener('DOMContentLoaded', () => {
       error.textContent = 'Please enter a valid interval in minutes (minimum 1).';
       return;
     }
+    const lookbackDays = parseFloat(crossoverLookbackDaysInput.value);
+    if (isNaN(lookbackDays) || lookbackDays < 1 || lookbackDays > 365) {
+        error.classList.remove('hidden');
+        error.textContent = 'Please enter a valid number of lookback days (1-365).';
+        return;
+    }
 
-    analyzeSymbols(symbolsToAnalyze, intervalMinutes * 60);
+    analyzeSymbols(symbolsToAnalyze, intervalMinutes * 60, lookbackDays);
 
     analysisIntervalId = setInterval(() => {
-      analyzeSymbols(symbolsToAnalyze, intervalMinutes * 60);
+      analyzeSymbols(symbolsToAnalyze, intervalMinutes * 60, lookbackDays);
     }, intervalMinutes * 60 * 1000);
 
     stopAnalysisBtn.classList.remove('hidden');
@@ -568,6 +653,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // If the user has explicitly turned OFF the mute checkbox, then unmute it now
       if (!muteCheckboxState) {
         delete mutedUntil[alertKey];
+        delete lastAlertSent[alertKey]; // Clear cooldown when manually unmuted
         console.log(`Alert for ${symbol} (${type}) manually unmuted.`);
       } else {
         // Still muted, and user wants it muted (checkbox checked)

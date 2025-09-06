@@ -408,7 +408,7 @@ function classifyPriceSentiment(dp) {
   return 'Bearish';
 }
 
-async function analyzeStock(symbol, apiKey, provider) {
+async function analyzeStock(symbol, apiKey, provider, lookbackDays = 1) {
   if (!symbol || !/^[A-Z]{1,5}$/.test(symbol)) {
     throw new Error('Invalid stock symbol. Use 1-5 uppercase letters (e.g., NVDA, ASTS)');
   }
@@ -417,12 +417,158 @@ async function analyzeStock(symbol, apiKey, provider) {
   }
 
   const today = moment().format('YYYYMMDD');
-  const last20TradingDays = getLastTradingDays(20);
-  const fromDate = last20TradingDays[0];
-  const toDate = today;
+  const fromDateForNews = getLastTradingDays(20)[0]; // For news sentiment
+  const toDateForNews = today;
+  // Need enough data for 200-day MA + lookbackDays, plus a large buffer for non-trading days
+  const startDateForHistory = moment().subtract(lookbackDays + 200 + 365, 'days').format('YYYY-MM-DD'); 
+  const endDateForHistory = moment().format('YYYY-MM-DD');
+
+  console.log(`[${symbol}] lookbackDays: ${lookbackDays}`);
+  console.log(`[${symbol}] startDateForHistory: ${startDateForHistory}, endDateForHistory: ${endDateForHistory}`);
+
+  let historicalPrices = [];
+  let historicalSma200 = [];
+  let ma200CrossoverUpLookback = false;
+  let ma200CrossoverDownLookback = false;
+  let ma200CrossoverUpDate = null;
+  let ma200CrossoverDownDate = null;
+
+  // --- Fetch historical data for crossover detection ---
+  if (provider === 'alpha_vantage') {
+    // Fetch historical daily prices
+    const dailyPricesUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=full&apikey=${apiKey}`;
+    try {
+      console.log(`Fetching historical daily prices for ${symbol} with Alpha Vantage`);
+      const response = await axios.get(dailyPricesUrl);
+      const timeSeries = response.data['Time Series (Daily)'];
+      if (timeSeries) {
+        historicalPrices = Object.keys(timeSeries)
+          .filter(date => moment(date).isBetween(moment(startDateForHistory), moment(endDateForHistory), 'day', '[]'))
+          .sort((a, b) => moment(a).diff(moment(b)))
+          .map(date => ({ date, close: parseFloat(timeSeries[date]['4. close']) }));
+      }
+      await delay(12000);
+    } catch (error) {
+      console.error(`Error fetching historical prices for ${symbol} (AV): ${error.message}`);
+    }
+
+    // Fetch historical 200-day SMA
+    const sma200Url = `https://www.alphavantage.co/query?function=SMA&symbol=${symbol}&interval=daily&time_period=200&series_type=close&apikey=${apiKey}`;
+    try {
+      console.log(`Fetching historical 200-day SMA for ${symbol} with Alpha Vantage`);
+      const response = await axios.get(sma200Url);
+      const smaData = response.data['Technical Analysis: SMA'];
+      if (smaData) {
+        historicalSma200 = Object.keys(smaData)
+          .filter(date => moment(date).isBetween(moment(startDateForHistory), moment(endDateForHistory), 'day', '[]'))
+          .sort((a, b) => moment(a).diff(moment(b)))
+          .map(date => ({ date, sma: parseFloat(smaData[date]['SMA']) }));
+      }
+      await delay(12000);
+    } catch (error) {
+      console.error(`Error fetching historical SMA200 for ${symbol} (AV): ${error.message}`);
+    }
+  } else if (provider === 'yfinance') {
+    try {
+      console.log(`Fetching historical data for ${symbol} with yahoo-finance2.chart for crossover detection`);
+      const chart = await yahooFinance.chart(symbol, {
+        period1: startDateForHistory,
+        period2: endDateForHistory,
+        interval: '1d'
+      });
+
+      // Yahoo Finance chart data is nested, extract relevant parts
+      const historicalData = chart.quotes;
+
+      console.log(`[${symbol}] yahooFinance.chart fetched ${historicalData ? historicalData.length : 0} data points.`);
+
+      if (historicalData && historicalData.length > 0) {
+        // Filter out any entries where close is null or undefined
+        const validHistoricalData = historicalData.filter(d => d.close !== null && d.close !== undefined);
+
+        const closes = validHistoricalData.map(d => d.close);
+        const dates = validHistoricalData.map(d => moment(d.date).format('YYYY-MM-DD'));
+
+        const calculateSMA = (data, period) => {
+          const smaValues = [];
+          for (let i = 0; i < data.length; i++) {
+            if (i >= period - 1) {
+              const slice = data.slice(i - period + 1, i + 1);
+              const sma = slice.reduce((sum, val) => sum + val, 0) / period;
+              smaValues.push({ date: dates[i], sma });
+            } else {
+              smaValues.push({ date: dates[i], sma: NaN });
+            }
+          }
+          return smaValues;
+        };
+
+        if (closes.length >= 200) {
+          historicalSma200 = calculateSMA(closes, 200);
+          console.log(`[${symbol}] Calculated ${historicalSma200.filter(s => !isNaN(s.sma)).length} valid 200-day SMAs.`);
+        } else {
+          console.warn(`[${symbol}] Not enough historical data (${closes.length} days) to calculate 200-day SMA. Required: 200`);
+        }
+
+        historicalPrices = validHistoricalData.map(d => ({ date: moment(d.date).format('YYYY-MM-DD'), close: d.close }));
+      }
+      await delay(1000);
+      console.log(`[${symbol}] historicalSma200 (yfinance) after calculation:`, historicalSma200.filter(s => !isNaN(s.sma)).slice(-5)); // Log last 5 valid SMA values
+    } catch (error) {
+      console.error(`Error fetching historical data for ${symbol} (yfinance): ${error.message}`);
+    }
+  }
+
+  console.log(`[${symbol}] Full historicalSma200 length: ${historicalSma200.length}`);
+  console.log(`[${symbol}] Sample historicalSma200:`, historicalSma200.filter(s => !isNaN(s.sma)).slice(0, 5)); // Log first 5 valid entries
+  console.log(`[${symbol}] Sample historicalPrices:`, historicalPrices.slice(0, 5)); // Log first 5 entries
+
+  // --- Crossover Detection Logic ---
+  if (historicalPrices.length > 0 && historicalSma200.length > 0) {
+    // Filter data to only include the lookbackDays period for crossover detection
+    // Ensure we have aligned dates for price and SMA. Also ensure SMA is not NaN.
+    const relevantHistoricalData = historicalPrices.map(priceEntry => {
+      const smaEntry = historicalSma200.find(sma => sma.date === priceEntry.date);
+      return {
+        date: priceEntry.date,
+        close: priceEntry.close,
+        sma200: smaEntry ? smaEntry.sma : NaN
+      };
+    }).filter(entry => !isNaN(entry.sma200) && moment(entry.date).isAfter(moment().subtract(lookbackDays + 1, 'days')));
+
+    console.log(`[${symbol}] Relevant historical data for lookback (filtered, valid SMA):`, relevantHistoricalData.length);
+
+    // Ensure we have enough data points to detect a crossover within the lookback period
+    if (relevantHistoricalData.length >= 2) {
+      for (let i = 1; i < relevantHistoricalData.length; i++) {
+        const previousDayPrice = relevantHistoricalData[i - 1].close;
+        const currentDayPrice = relevantHistoricalData[i].close;
+        const previousDaySma200 = relevantHistoricalData[i - 1].sma200;
+        const currentDaySma200 = relevantHistoricalData[i].sma200;
+
+        console.log(`[${symbol}] Day ${i}: PrevPrice: ${previousDayPrice}, CurrPrice: ${currentDayPrice}, PrevSMA: ${previousDaySma200}, CurrSMA: ${currentDaySma200}`);
+
+        // Detect Crossover Up (price goes from below to above MA200)
+        if (previousDayPrice < previousDaySma200 && currentDayPrice > currentDaySma200) {
+          ma200CrossoverUpLookback = true;
+          ma200CrossoverUpDate = relevantHistoricalData[i].date;
+          console.log(`[${symbol}] MA200 Crossover Up detected on ${relevantHistoricalData[i].date}`);
+        }
+        // Detect Crossover Down (price goes from above to below MA200)
+        if (previousDayPrice > previousDaySma200 && currentDayPrice < currentDaySma200) {
+          ma200CrossoverDownLookback = true;
+          ma200CrossoverDownDate = relevantHistoricalData[i].date;
+          console.log(`[${symbol}] MA200 Crossover Down detected on ${relevantHistoricalData[i].date}`);
+        }
+      }
+    }
+  }
+
+  console.log(`[${symbol}] Final Crossover Flags: Up=${ma200CrossoverUpLookback}, Down=${ma200CrossoverDownLookback}`);
+  console.log(`[${symbol}] Crossover Up Date: ${ma200CrossoverUpDate}, Crossover Down Date: ${ma200CrossoverDownDate}`);
 
   const companyNameResult = await getCompanyOverview(symbol, apiKey, provider);
-  const newsDataResult = await getNewsSentiment(symbol, fromDate, toDate, apiKey, provider);
+  const newsDataResult = await getNewsSentiment(symbol, fromDateForNews, toDateForNews, apiKey, provider);
   const quoteDataResult = await getStockQuote(symbol, apiKey, provider);
   const sma50Result = await getSMA(symbol, apiKey, 50, provider);
   const sma200Result = await getSMA(symbol, apiKey, 200, provider);
@@ -487,7 +633,11 @@ async function analyzeStock(symbol, apiKey, provider) {
       priceSentiment: classifyPriceSentiment(parseFloat(quoteDataResult.data['10. change percent'] || 0)),
       percentFrom50DayMA: sma50Result.data ? (((currentPrice - sma50Result.data) / sma50Result.data) * 100).toFixed(2) : 'N/A',
       percentFrom200DayMA: sma200Result.data ? (((currentPrice - sma200Result.data) / sma200Result.data) * 100).toFixed(2) : 'N/A',
-      volumeComparison: avgVolumeResult.data && latestVolume ? (((latestVolume - avgVolumeResult.data) / avgVolumeResult.data) * 100).toFixed(2) : 'N/A'
+      volumeComparison: avgVolumeResult.data && latestVolume ? (((latestVolume - avgVolumeResult.data) / avgVolumeResult.data) * 100).toFixed(2) : 'N/A',
+      ma200CrossoverUpLookback: ma200CrossoverUpLookback,
+      ma200CrossoverDownLookback: ma200CrossoverDownLookback,
+      ma200CrossoverUpDate: ma200CrossoverUpDate,
+      ma200CrossoverDownDate: ma200CrossoverDownDate
     };
   }
 
