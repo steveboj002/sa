@@ -41,4 +41,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loginPassword.value = '';
     error.classList.add('hidden');
   });
+
+  showSignupBtn.addEventListener('click', () => {
+    loginForm.classList.add('hidden');
+    signupForm.classList.remove('hidden');
+    loginUsername.value = '';
+    loginPassword.value = '';
+    error.classList.add('hidden');
+  });
 });
