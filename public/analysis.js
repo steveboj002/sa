@@ -252,46 +252,70 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       stockDiv.innerHTML = `
-          <h2 class="text-xl font-semibold mb-2">Results for ${stock.companyName} (${stock.symbol})</h2>
-          <p class="text-sm text-gray-500 mb-4">As of 04:59 PM EDT, August 25, 2025</p>
-          ${stock.companyNameError ? `<p class="text-red-500">Company Name Error: ${stock.companyNameError}</p>` : ''}
-          <div id="quote-section-${stock.symbol}" class="mb-4 ${stock.quote ? '' : 'hidden'}">
-              <h3 class="text-lg font-medium">Stock Quote</h3>
-              ${stock.quoteError ? `<p class="text-red-500">Quote Error: ${stock.quoteError}</p>` : ''}
-              <p>Current Price: $${stock.quote?.price || 'N/A'}</p>
-              <p class="${priceChangeColorClass}">Change: ${stock.quote?.change || 'N/A'} (${stock.quote?.changePercent || 'N/A'}%)</p>
-              <p>Open: $${stock.quote?.open || 'N/A'}</p>
-              <p>High: $${stock.quote?.high || 'N/A'}</p>
-              <p>Low: $${stock.quote?.low || 'N/A'}</p>
-              <p>Previous Close: $${stock.quote?.previousClose || 'N/A'}</p>
-              <p class="${ma50ColorClass}">Percent from 50-Day MA: ${percent50Day || 'N/A'}% ${stock.sma50Error ? `<span class="text-red-500">(${stock.sma50Error})</span>` : ''}</p>
-              <p class="${ma200ColorClass}">Percent from 200-Day MA: ${percent200Day || 'N/A'}% ${stock.sma200Error ? `<span class="text-red-500">(${stock.sma200Error})</span>` : ''}</p>
-              <p class="${volumeComparisonColorClass}">Volume Comparison to 20-Day Average: ${volumeComparison || 'N/A'}% ${stock.volumeError ? `<span class="text-red-500">(${stock.volumeError})</span>` : ''}</p>
-              <p>Price-Based Sentiment: ${stock.quote?.priceSentiment || 'N/A'}</p>
+          <h2 class="text-2xl font-bold text-gray-800 mb-2">${stock.companyName} (${stock.symbol})</h2>
+          <p class="text-sm text-gray-600 mb-4">As of 04:59 PM EDT, August 25, 2025</p>
+          ${stock.companyNameError && stock.companyNameError !== 'No overview data available for this symbol' ? `<p class="text-red-500 mb-4">Company Name Error: ${stock.companyNameError}</p>` : ''}
+          
+          <div id="quote-section-${stock.symbol}" class="bg-gray-50 p-4 rounded-lg mb-4 ${stock.quote ? '' : 'hidden'}">
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">Stock Quote</h3>
+              ${stock.quoteError ? `<p class="text-red-500 mb-2">Quote Error: ${stock.quoteError}</p>` : ''}
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <p>Current Price: <span class="font-medium">$${stock.quote?.price || 'N/A'}</span></p>
+                <p class="${priceChangeColorClass}">Change: <span class="font-medium">${stock.quote?.change || 'N/A'} (${stock.quote?.changePercent || 'N/A'}%)</span></p>
+                <p>Open: <span class="font-medium">$${stock.quote?.open || 'N/A'}</span></p>
+                <p>High: <span class="font-medium">$${stock.quote?.high || 'N/A'}</span></p>
+                <p>Low: <span class="font-medium">$${stock.quote?.low || 'N/A'}</span></p>
+                <p>Previous Close: <span class="font-medium">$${stock.quote?.previousClose || 'N/A'}</span></p>
+                <p class="${ma50ColorClass}">50-Day MA: <span class="font-medium">${percent50Day !== undefined ? `${percent50Day}%` : 'N/A'}</span> ${stock.sma50Error ? `<span class="text-red-500 text-xs">(${stock.sma50Error})</span>` : ''}</p>
+                <p class="${ma200ColorClass}">200-Day MA: <span class="font-medium">${percent200Day !== undefined ? `${percent200Day}%` : 'N/A'}</span> ${stock.sma200Error ? `<span class="text-red-500 text-xs">(${stock.sma200Error})</span>` : ''}</p>
+                <p class="${volumeComparisonColorClass}">Volume vs 20-Day Avg: <span class="font-medium">${volumeComparison !== undefined ? `${volumeComparison}%` : 'N/A'}</span> ${stock.volumeError ? `<span class="text-red-500 text-xs">(${stock.volumeError})</span>` : ''}</p>
+                <p>Price-Based Sentiment: <span class="font-medium">${stock.quote?.priceSentiment || 'N/A'}</span></p>
+              </div>
           </div>
-          ${stock.quote?.ma200CrossoverUpLookback ? `<p class="text-purple-600 font-semibold">MA200 Crossover Up Detected on ${stock.quote.ma200CrossoverUpDate}</p>` : ''}
-          ${stock.quote?.ma200CrossoverDownLookback ? `<p class="text-purple-600 font-semibold">MA200 Crossover Down Detected on ${stock.quote.ma200CrossoverDownDate}</p>` : ''}
-          <div class="mb-4">
-              <h3 class="text-lg font-medium">Mention Counts</h3>
-              ${stock.newsError ? `<p class="text-red-500">News Error: ${stock.newsError}</p>` : ''}
-              <p>Today's News Mentions: ${stock.mentions.today}</p>
-              <p>Average Mentions (Last 20 Trading Days): ${stock.mentions.average}</p>
-              <p>Comparison to Average: ${stock.mentions.comparison}</p>
-          </div>
-          <div class="mb-4">
-              <h3 class="text-lg font-medium">Sentiment Analysis (Today)</h3>
-              <p>Overall Score: ${stock.sentimentToday.score} (${stock.sentimentToday.classification})</p>
-              <p>Positive: ${stock.sentimentToday.positive}%</p>
-              <p>Negative: ${stock.sentimentToday.negative}%</p>
-              <p>Neutral: ${stock.sentimentToday.neutral}%</p>
-          </div>
-          <div class="mb-4">
-              <h3 class="text-lg font-medium">Sentiment Analysis (Last 20 Trading Days)</h3>
-              <p>Overall Score: ${stock.sentimentAverage.score} (${stock.sentimentAverage.classification})</p>
-              <p>Positive: ${stock.sentimentAverage.positive}%</p>
-              <p>Negative: ${stock.sentimentAverage.negative}%</p>
-              <p>Neutral: ${stock.sentimentAverage.neutral}%</p>
-          </div>
+
+          ${(stock.quote?.ma200CrossoverUpLookback || stock.quote?.ma200CrossoverDownLookback) ? `
+            <div class="bg-gray-50 p-4 rounded-lg mb-4">
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">MA200 Crossovers</h3>
+              ${stock.quote?.ma200CrossoverUpLookback ? `<p class="text-purple-600 font-semibold">MA200 Crossover Up Detected on ${stock.quote.ma200CrossoverUpDate}</p>` : ''}
+              ${stock.quote?.ma200CrossoverDownLookback ? `<p class="text-purple-600 font-semibold">MA200 Crossover Down Detected on ${stock.quote.ma200CrossoverDownDate}</p>` : ''}
+            </div>
+          ` : ''}
+
+          ${stock.newsError !== 'News sentiment not supported by yahoo-finance2' && stock.mentions && (stock.mentions.today > 0 || stock.mentions.average > 0 || stock.mentions.comparison !== 'N/A' || (stock.newsError && stock.newsError !== 'News sentiment not supported by yahoo-finance2')) ? `
+            <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Mention Counts</h3>
+                ${stock.newsError ? `<p class="text-red-500 mb-2">News Error: ${stock.newsError}</p>` : ''}
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                  <p>Today's News Mentions: <span class="font-medium">${stock.mentions.today}</span></p>
+                  <p>Average Mentions (Last 20 Trading Days): <span class="font-medium">${stock.mentions.average}</span></p>
+                  <p>Comparison to Average: <span class="font-medium">${stock.mentions.comparison}</span></p>
+                </div>
+            </div>
+          ` : ''}
+
+          ${stock.sentimentToday && stock.sentimentToday.score !== 'N/A' && stock.sentimentToday.score !== 0 ? `
+            <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Sentiment Analysis (Today)</h3>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                  <p>Overall Score: <span class="font-medium">${stock.sentimentToday.score} (${stock.sentimentToday.classification})</span></p>
+                  <p>Positive: <span class="font-medium">${stock.sentimentToday.positive}%</span></p>
+                  <p>Negative: <span class="font-medium">${stock.sentimentToday.negative}%</span></p>
+                  <p>Neutral: <span class="font-medium">${stock.sentimentToday.neutral}%</span></p>
+                </div>
+            </div>
+          ` : ''}
+
+          ${stock.sentimentAverage && stock.sentimentAverage.score !== 'N/A' && stock.sentimentAverage.score !== 0 ? `
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Sentiment Analysis (Last 20 Trading Days)</h3>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                  <p>Overall Score: <span class="font-medium">${stock.sentimentAverage.score} (${stock.sentimentAverage.classification})</span></p>
+                  <p>Positive: <span class="font-medium">${stock.sentimentAverage.positive}%</span></p>
+                  <p>Negative: <span class="font-medium">${stock.sentimentAverage.negative}%</span></p>
+                  <p>Neutral: <span class="font-medium">${stock.sentimentAverage.neutral}%</span></p>
+                </div>
+            </div>
+          ` : ''}
       `;
       results.appendChild(stockDiv);
   }
