@@ -574,6 +574,27 @@ async function analyzeStock(symbol, apiKey, provider, lookbackDays = 1) {
   const sma200Result = await getSMA(symbol, apiKey, 200, provider);
   const avgVolumeResult = await getAverageVolume(symbol, apiKey, provider);
 
+  let upcomingEarningsDate = null;
+  let exDividendDate = null;
+
+  if (provider === 'yfinance') {
+    try {
+      console.log(`Fetching calendar events for ${symbol} with yahoo-finance2`);
+      const calendarEvents = await yahooFinance.quoteSummary(symbol, { modules: ['calendarEvents'] });
+      if (calendarEvents && calendarEvents.calendarEvents) {
+        if (calendarEvents.calendarEvents.earnings && calendarEvents.calendarEvents.earnings.earningsDate && calendarEvents.calendarEvents.earnings.earningsDate.length > 0) {
+          upcomingEarningsDate = moment(calendarEvents.calendarEvents.earnings.earningsDate[0]).format('YYYY-MM-DD');
+        }
+        if (calendarEvents.calendarEvents.exDividendDate && calendarEvents.calendarEvents.exDividendDate.raw) {
+          exDividendDate = moment(calendarEvents.calendarEvents.exDividendDate).format('YYYY-MM-DD');
+        }
+      }
+      await delay(1000);
+    } catch (error) {
+      console.error(`Error fetching calendar events for ${symbol} (yfinance): ${error.message}`);
+    }
+  }
+
   const result = {
     symbol: symbol.toUpperCase(),
     companyName: companyNameResult.error ? symbol.toUpperCase() : companyNameResult.data,
@@ -637,7 +658,9 @@ async function analyzeStock(symbol, apiKey, provider, lookbackDays = 1) {
       ma200CrossoverUpLookback: ma200CrossoverUpLookback,
       ma200CrossoverDownLookback: ma200CrossoverDownLookback,
       ma200CrossoverUpDate: ma200CrossoverUpDate,
-      ma200CrossoverDownDate: ma200CrossoverDownDate
+      ma200CrossoverDownDate: ma200CrossoverDownDate,
+      upcomingEarningsDate: upcomingEarningsDate,
+      exDividendDate: exDividendDate
     };
   }
 

@@ -273,6 +273,14 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>
           </div>
 
+          ${(stock.quote?.upcomingEarningsDate || stock.quote?.exDividendDate) ? `
+            <div class="bg-gray-50 p-4 rounded-lg mb-4">
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">Upcoming Events</h3>
+              ${stock.quote?.upcomingEarningsDate ? `<p>Upcoming Earnings Date: <span class="font-medium">${stock.quote.upcomingEarningsDate}</span></p>` : ''}
+              ${stock.quote?.exDividendDate ? `<p>Ex-Dividend Date: <span class="font-medium">${stock.quote.exDividendDate}</span></p>` : ''}
+            </div>
+          ` : ''}
+
           ${(stock.quote?.ma200CrossoverUpLookback || stock.quote?.ma200CrossoverDownLookback) ? `
             <div class="bg-gray-50 p-4 rounded-lg mb-4">
               <h3 class="text-lg font-semibold text-gray-700 mb-2">MA200 Crossovers</h3>
