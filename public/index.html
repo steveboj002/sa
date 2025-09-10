@@ -27,7 +27,9 @@
       <div id="login-form">
         <input type="text" id="login-username" placeholder="Username" class="w-full p-2 mb-2 border rounded" value="elonkhatri@gmail.com">
         <input type="password" id="login-password" placeholder="Password" class="w-full p-2 mb-2 border rounded" value="123">
-        <button id="login-btn" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Login</button>
+        <div class="flex justify-center">
+          <button id="login-btn" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Login</button>
+        </div>
         <p class="text-center mt-2">
           <button id="show-signup-btn" class="text-blue-500 hover:underline">Need an account? Sign up</button>
         </p>
@@ -35,14 +37,18 @@
       <div id="signup-form" class="hidden">
         <input type="text" id="signup-username" placeholder="Username" class="w-full p-2 mb-2 border rounded">
         <input type="password" id="signup-password" placeholder="Password" class="w-full p-2 mb-2 border rounded">
-        <button id="signup-btn" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Sign Up</button>
+        <div class="flex justify-center">
+          <button id="signup-btn" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Sign Up</button>
+        </div>
         <p class="text-center mt-2">
           <button id="show-login-btn" class="text-blue-500 hover:underline">Already have an account? Log in</button>
         </p>
       </div>
       <div id="user-section" class="hidden">
         <p id="user-greeting" class="text-center mb-2"></p>
-        <button id="logout-btn" class="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600">Logout</button>
+        <div class="flex justify-center">
+          <button id="logout-btn" class="bg-red-500 text-white p-2 rounded hover:bg-red-600">Logout</button>
+        </div>
       </div>
     </div>
     <div id="analysis-section" class="mb-4 hidden">
@@ -88,16 +94,16 @@
         placeholder="Enter stock symbols (e.g., NVDA,ASTS or NVDA, ASTS)"
         class="w-full p-2 border rounded"
       >
-      <div class="flex space-x-2 mt-2">
+      <div class="flex justify-center space-x-2 mt-2">
         <button
           id="analyze-btn"
-          class="flex-1 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
         >
           Analyze
         </button>
         <button
           id="add-watchlist-btn"
-          class="flex-1 bg-green-500 text-white p-2 rounded hover:bg-green-600"
+          class="bg-green-500 text-white p-2 rounded hover:bg-green-600"
         >
           Add to Watchlist
         </button>
@@ -168,12 +174,14 @@
     <div id="watchlist-section" class="mb-4 hidden">
       <h2 class="text-xl font-semibold mb-2">Watchlist</h2>
       <div id="watchlist" class="flex flex-wrap gap-2 mb-2"></div>
-      <button
-        id="analyze-watchlist-btn"
-        class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 hidden"
-      >
-        Analyze Watchlist
-      </button>
+      <div class="flex justify-center">
+        <button
+          id="analyze-watchlist-btn"
+          class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 hidden"
+        >
+          Analyze Watchlist
+        </button>
+      </div>
     </div>
     <div id="loading" class="hidden text-center text-gray-500">Loading...</div>
     <div id="error" class="hidden text-center text-red-500"></div>
