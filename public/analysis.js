@@ -7,11 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const analyzeBtn = document.getElementById('analyze-btn');
   const addWatchlistBtn = document.getElementById('add-watchlist-btn');
   const analyzeWatchlistBtn = document.getElementById('analyze-watchlist-btn');
-  const userSection = document.getElementById('user-section');
   const logoutBtn = document.getElementById('logout-btn');
   const userGreeting = document.getElementById('user-greeting');
-  const analysisSection = document.getElementById('analysis-section');
-  const watchlistSection = document.getElementById('watchlist-section');
   const watchlistDiv = document.getElementById('watchlist');
   const loading = document.getElementById('loading');
   const error = document.getElementById('error');
@@ -32,19 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const muteMa200CrossoverUpAlertsCheckbox = document.getElementById('muteMa200CrossoverUpAlerts');
   const muteMa200CrossoverDownAlertsCheckbox = document.getElementById('muteMa200CrossoverDownAlerts');
 
-  // let watchlist = []; // This should be managed in utils.js if shared, otherwise local
   let analysisIntervalId = null;
-  // let countdownIntervalId = null; // Moved to utils.js
-  // let timeLeft = 0; // Moved to utils.js
-  // const alertCooldownMinutes = 5; // Now configured via UI
-  // const lastAlertSent = {}; // Stores timestamps of last sent alerts: { symbol_type: timestamp } - Moved to utils.js
-  // const mutedUntil = {}; // Stores timestamps until an alert type for a symbol is muted: { symbol_alertType: unmuteTimestamp } - Moved to utils.js
-
-  // function updateAuthUI(isLoggedIn, username) { ... } // Moved to utils.js
-  // function renderWatchlist() { ... } // Moved to utils.js
-  // async function fetchWatchlist() { ... } // Moved to utils.js
-  // async function addToWatchlist(input) { ... } // Moved to utils.js
-  // async function removeFromWatchlist(symbol) { ... } // Moved to utils.js
 
   async function analyzeSymbols(symbols, duration = 0, lookbackDays = 1) {
     loading.classList.remove('hidden');
@@ -311,9 +296,6 @@ document.addEventListener('DOMContentLoaded', () => {
       results.appendChild(stockDiv);
   }
 
-  // loginBtn.addEventListener('click', async () => { ... }) // Moved to login.js
-  // signupBtn.addEventListener('click', async () => { ... }) // Moved to signup.js
-
   logoutBtn.addEventListener('click', async () => {
     try {
       const response = await fetch('/logout', {
@@ -335,9 +317,6 @@ document.addEventListener('DOMContentLoaded', () => {
       error.textContent = 'Error connecting to server.';
     }
   });
-
-  // showLoginBtn.addEventListener('click', () => { ... }) // Moved to login.js
-  // showSignupBtn.addEventListener('click', () => { ... }) // Moved to signup.js
 
   analyzeBtn.addEventListener('click', () => {
     const input = symbolInput.value.trim();
@@ -405,11 +384,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // function startCountdown(duration) { ... } // Moved to utils.js
-  // function stopCountdown() { ... } // Moved to utils.js
-  // async function sendEmailAlert(symbol, subject, body) { ... } // Moved to utils.js
-  // function triggerAlert(symbol, type, muteCheckboxState, subject, body) { ... } // Moved to utils.js
-
   watchlistDiv.addEventListener('click', (e) => {
     if (e.target.classList.contains('remove-watchlist-btn')) {
       const symbol = e.target.dataset.symbol;
@@ -420,7 +394,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Initial check for logged-in status and UI update
   if (localStorage.getItem('token')) {
     fetch('/user', {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
@@ -441,8 +414,4 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     updateAuthUI(false);
   }
-  
-  // Initialize login and signup functionality
-  // initLogin(); 
-  // initSignup();
 });

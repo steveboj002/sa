@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const signupUsername = document.getElementById('signup-username');
   const signupPassword = document.getElementById('signup-password');
   const signupBtn = document.getElementById('signup-btn');
-  const showSignupBtn = document.getElementById('show-signup-btn');
+  const showLoginBtn = document.getElementById('show-login-btn');
   const error = document.getElementById('error');
 
   signupBtn.addEventListener('click', async () => {
@@ -22,8 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.ok) {
         localStorage.setItem('token', data.token);
         updateAuthUI(true, username);
-        error.classList.remove('hidden');
-        error.textContent = `Signed up and logged in as ${username}`;
+        error.classList.add('hidden'); // Clear error on successful signup
       } else {
         error.classList.remove('hidden');
         error.textContent = data.error || 'Signup failed.';
@@ -34,9 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  showSignupBtn.addEventListener('click', () => {
-    loginForm.classList.add('hidden');
-    signupForm.classList.remove('hidden');
+  showLoginBtn.addEventListener('click', () => {
+    signupForm.classList.add('hidden');
+    loginForm.classList.remove('hidden');
     signupUsername.value = '';
     signupPassword.value = '';
     error.classList.add('hidden');

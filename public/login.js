@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginBtn = document.getElementById('login-btn');
   const showLoginBtn = document.getElementById('show-login-btn');
   const error = document.getElementById('error');
+  const showSignupBtn = document.getElementById('show-signup-btn');
 
   loginBtn.addEventListener('click', async () => {
     const username = loginUsername.value.trim();
@@ -22,8 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.ok) {
         localStorage.setItem('token', data.token);
         updateAuthUI(true, username);
-        error.classList.remove('hidden');
-        error.textContent = `Logged in as ${username}`;
+        error.classList.add('hidden'); // Clear error on successful login
       } else {
         error.classList.remove('hidden');
         error.textContent = data.error || 'Login failed.';

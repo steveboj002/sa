@@ -10,8 +10,14 @@ export function updateAuthUI(isLoggedIn, username) {
   const loginForm = document.getElementById('login-form');
   const signupForm = document.getElementById('signup-form');
   const userSection = document.getElementById('user-section');
-  const analysisSection = document.getElementById('analysis-section');
-  const watchlistSection = document.getElementById('watchlist-section');
+  
+  // New dashboard panels
+  const authSectionPanel = document.getElementById('auth-section-panel');
+  const inputActionPanel = document.getElementById('input-action-panel');
+  const watchlistPanel = document.getElementById('watchlist-panel');
+  const settingsPanel = document.getElementById('settings-panel');
+  const resultsAdsPanel = document.getElementById('results-ads-panel');
+
   const userGreeting = document.getElementById('user-greeting');
   const symbolInput = document.getElementById('symbol');
   const loginUsername = document.getElementById('login-username');
@@ -20,11 +26,18 @@ export function updateAuthUI(isLoggedIn, username) {
   const signupPassword = document.getElementById('signup-password');
   const error = document.getElementById('error');
 
+  // Toggle visibility of auth forms and user section
   loginForm.classList.toggle('hidden', isLoggedIn);
-  signupForm.classList.add('hidden');
+  signupForm.classList.add('hidden'); // Always hide signup when updating auth UI
   userSection.classList.toggle('hidden', !isLoggedIn);
-  analysisSection.classList.toggle('hidden', !isLoggedIn);
-  watchlistSection.classList.toggle('hidden', !isLoggedIn);
+
+  // Toggle visibility of dashboard panels
+  inputActionPanel.classList.toggle('hidden', !isLoggedIn);
+  watchlistPanel.classList.toggle('hidden', !isLoggedIn);
+  settingsPanel.classList.toggle('hidden', !isLoggedIn);
+  resultsAdsPanel.classList.toggle('hidden', !isLoggedIn);
+  authSectionPanel.classList.toggle('hidden', isLoggedIn); // Hide auth panel when logged in
+
   if (isLoggedIn) {
     userGreeting.textContent = `Logged in as ${username}`;
     symbolInput.value = '';
@@ -37,8 +50,6 @@ export function updateAuthUI(isLoggedIn, username) {
   } else {
     watchlist = [];
     renderWatchlist();
-    // loginUsername.value = ''; // Temporarily commented out for pre-population
-    // loginPassword.value = ''; // Temporarily commented out for pre-population
     signupUsername.value = '';
     signupPassword.value = '';
     error.classList.add('hidden');
