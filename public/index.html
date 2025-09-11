@@ -31,6 +31,33 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Left Column: Controls & Sidebar items -->
       <div class="lg:col-span-1 space-y-6">
+        <!-- Input and Actions Panel (Analyze Stocks) -->
+        <div id="input-action-panel" class="bg-white p-6 rounded-lg shadow-lg">
+          <h2 class="text-xl font-semibold mb-4 text-center">Analyze Stocks</h2>
+      <div class="mb-2">
+        <label for="provider" class="block text-sm font-medium text-gray-700">Select Data Provider:</label>
+        <select id="provider" class="mt-1 block w-full p-2 border rounded">
+          <option value="alpha_vantage">Alpha Vantage</option>
+              <option value="yfinance" selected>Yahoo Finance (yfinance)</option>
+        </select>
+      </div>
+      <input
+        type="text"
+        id="symbol"
+            placeholder="Enter stock symbols (e.g., NVDA,ASTS)"
+            class="w-full p-2 border rounded mt-2"
+          >
+          <div class="flex justify-center space-x-2 mt-2">
+            <button id="analyze-btn" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Analyze</button>
+            <button id="add-watchlist-btn" class="bg-green-500 text-white p-2 rounded hover:bg-green-600">Add to Watchlist</button>
+          </div>
+          <div class="mb-2 mt-4">
+            <label for="interval" class="block text-sm font-medium text-gray-700">Reanalyze Every (minutes):</label>
+            <input type="number" id="interval" value="1" min="1" class="mt-1 block w-full p-2 border rounded">
+          </div>
+          <button id="stop-analysis-btn" class="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600 mt-2 hidden">Stop Continuous Analysis</button>
+          <p id="countdown-timer" class="text-center text-gray-700 mt-2 hidden"></p>
+        </div>
         <!-- Authentication / User Section -->
         <div id="auth-section-panel" class="bg-white p-6 rounded-lg shadow-lg">
           <h2 class="text-xl font-semibold mb-4 text-center">Account</h2>
@@ -63,34 +90,6 @@
             </div>
       </div>
     </div>
-        
-        <!-- Input and Actions Panel (Analyze Stocks) -->
-        <div id="input-action-panel" class="bg-white p-6 rounded-lg shadow-lg">
-          <h2 class="text-xl font-semibold mb-4 text-center">Analyze Stocks</h2>
-      <div class="mb-2">
-        <label for="provider" class="block text-sm font-medium text-gray-700">Select Data Provider:</label>
-        <select id="provider" class="mt-1 block w-full p-2 border rounded">
-          <option value="alpha_vantage">Alpha Vantage</option>
-              <option value="yfinance" selected>Yahoo Finance (yfinance)</option>
-        </select>
-      </div>
-      <input
-        type="text"
-        id="symbol"
-            placeholder="Enter stock symbols (e.g., NVDA,ASTS)"
-            class="w-full p-2 border rounded mt-2"
-          >
-          <div class="flex justify-center space-x-2 mt-2">
-            <button id="analyze-btn" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Analyze</button>
-            <button id="add-watchlist-btn" class="bg-green-500 text-white p-2 rounded hover:bg-green-600">Add to Watchlist</button>
-          </div>
-          <div class="mb-2 mt-4">
-            <label for="interval" class="block text-sm font-medium text-gray-700">Reanalyze Every (minutes):</label>
-            <input type="number" id="interval" value="1" min="1" class="mt-1 block w-full p-2 border rounded">
-          </div>
-          <button id="stop-analysis-btn" class="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600 mt-2 hidden">Stop Continuous Analysis</button>
-          <p id="countdown-timer" class="text-center text-gray-700 mt-2 hidden"></p>
-        </div>
         
         <!-- Watchlist Panel -->
         <div id="watchlist-panel" class="bg-white p-6 rounded-lg shadow-lg">
