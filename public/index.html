@@ -34,49 +34,49 @@
         <!-- Authentication / User Section -->
         <div id="auth-section-panel" class="bg-white p-6 rounded-lg shadow-lg">
           <h2 class="text-xl font-semibold mb-4 text-center">Account</h2>
-          <div id="auth-section" class="mb-4">
-            <div id="login-form">
+    <div id="auth-section" class="mb-4">
+      <div id="login-form">
               <input type="text" id="login-username" placeholder="Username" class="w-full p-2 mb-2 border rounded" value="elonkhatri@gmail.com">
               <input type="password" id="login-password" placeholder="Password" class="w-full p-2 mb-2 border rounded" value="123">
               <div class="flex justify-center">
                 <button id="login-btn" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Login</button>
               </div>
-              <p class="text-center mt-2">
-                <button id="show-signup-btn" class="text-blue-500 hover:underline">Need an account? Sign up</button>
-              </p>
-            </div>
-            <div id="signup-form" class="hidden">
-              <input type="text" id="signup-username" placeholder="Username" class="w-full p-2 mb-2 border rounded">
-              <input type="password" id="signup-password" placeholder="Password" class="w-full p-2 mb-2 border rounded">
+        <p class="text-center mt-2">
+          <button id="show-signup-btn" class="text-blue-500 hover:underline">Need an account? Sign up</button>
+        </p>
+      </div>
+      <div id="signup-form" class="hidden">
+        <input type="text" id="signup-username" placeholder="Username" class="w-full p-2 mb-2 border rounded">
+        <input type="password" id="signup-password" placeholder="Password" class="w-full p-2 mb-2 border rounded">
               <div class="flex justify-center">
                 <button id="signup-btn" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Sign Up</button>
               </div>
-              <p class="text-center mt-2">
-                <button id="show-login-btn" class="text-blue-500 hover:underline">Already have an account? Log in</button>
-              </p>
-            </div>
-            <div id="user-section" class="hidden">
-              <p id="user-greeting" class="text-center mb-2"></p>
+        <p class="text-center mt-2">
+          <button id="show-login-btn" class="text-blue-500 hover:underline">Already have an account? Log in</button>
+        </p>
+      </div>
+      <div id="user-section" class="hidden">
+        <p id="user-greeting" class="text-center mb-2"></p>
               <div class="flex justify-center">
                 <button id="logout-btn" class="bg-red-500 text-white p-2 rounded hover:bg-red-600">Logout</button>
               </div>
             </div>
-          </div>
-        </div>
+      </div>
+    </div>
         
         <!-- Input and Actions Panel (Analyze Stocks) -->
         <div id="input-action-panel" class="bg-white p-6 rounded-lg shadow-lg">
           <h2 class="text-xl font-semibold mb-4 text-center">Analyze Stocks</h2>
-          <div class="mb-2">
-            <label for="provider" class="block text-sm font-medium text-gray-700">Select Data Provider:</label>
-            <select id="provider" class="mt-1 block w-full p-2 border rounded">
-              <option value="alpha_vantage">Alpha Vantage</option>
+      <div class="mb-2">
+        <label for="provider" class="block text-sm font-medium text-gray-700">Select Data Provider:</label>
+        <select id="provider" class="mt-1 block w-full p-2 border rounded">
+          <option value="alpha_vantage">Alpha Vantage</option>
               <option value="yfinance" selected>Yahoo Finance (yfinance)</option>
-            </select>
-          </div>
-          <input
-            type="text"
-            id="symbol"
+        </select>
+      </div>
+      <input
+        type="text"
+        id="symbol"
             placeholder="Enter stock symbols (e.g., NVDA,ASTS)"
             class="w-full p-2 border rounded mt-2"
           >
@@ -180,6 +180,22 @@
   <!-- Google AdSense Placeholder Script -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-xxxxxxxxxxxxxxxx"
    crossorigin="anonymous"></script>
+  <!-- Chart.js and Moment.js for charting (from local node_modules) -->
+  <script src="/node_modules/moment/moment.js"></script>
+  <script src="/node_modules/chart.js/dist/chart.umd.js"></script>
+  <script src="/node_modules/chartjs-adapter-moment/dist/chartjs-adapter-moment.js"></script>
+  <script>
+    console.log('--- Chart.js and Moment.js Local Registration ---');
+    if (typeof Chart !== 'undefined' && typeof ChartjsAdapterMoment !== 'undefined') {
+      Chart.register(ChartjsAdapterMoment);
+      // Register all default Chart.js components including TimeScale
+      Chart.register(...Chart.get, Chart.TimeScale);
+      console.log('ChartjsAdapterMoment and default components registered successfully locally!');
+    } else {
+      console.error('Error: Chart or ChartjsAdapterMoment is not available for registration (local).');
+    }
+    console.log('--- End of Chart.js Local Registration ---');
+  </script>
   <script type="module" src="utils.js"></script>
   <script type="module" src="login.js"></script>
   <script type="module" src="signup.js"></script>

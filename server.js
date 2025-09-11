@@ -11,6 +11,7 @@ require('dotenv').config();
 
 app.use(express.json());
 app.use(express.static('public'));
+app.use('/node_modules', express.static('node_modules'));
 
 const db = new sqlite3.Database('database.db');
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';

@@ -1,6 +1,9 @@
 import { updateAuthUI, fetchWatchlist, addToWatchlist, removeFromWatchlist, startCountdown, stopCountdown, countdownIntervalId, watchlist, lastAlertSent, mutedUntil, triggerAlert } from './utils.js';
-// import { initLogin } from './login.js'; // Re-add import for initLogin
-// import { initSignup } from './signup.js'; // Re-add import for initSignup
+// import { Chart, TimeScale, registerables } from 'chart.js';
+// import { MomentAdapter } from 'chartjs-adapter-moment';
+// import moment from 'moment';
+
+// Chart.register(...registerables, TimeScale, MomentAdapter);
 
 document.addEventListener('DOMContentLoaded', () => {
   const symbolInput = document.getElementById('symbol');
@@ -31,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let analysisIntervalId = null;
 
+  // Moved analyzeSymbols function here for correct scoping and to fix previous accidental removal
   async function analyzeSymbols(symbols, duration = 0, lookbackDays = 1) {
     loading.classList.remove('hidden');
     error.classList.add('hidden');
@@ -60,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const apiUrl = `/analyze?symbols=${symbols.join(',')}&provider=${providerSelect.value}&lookbackDays=${lookbackDays}`;
-    console.log('Fetching data from URL:', apiUrl);
 
     try {
       const response = await fetch(apiUrl, {
@@ -70,10 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-
-      console.log('[Frontend] Raw response object:', response);
-      console.log('[Frontend] Response status:', response.status, response.statusText);
-      console.log('[Frontend] Is response.ok:', response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -85,12 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const responseText = await response.text(); // Read raw response text
-      console.log('[Frontend] Raw response text:', responseText);
 
       let data;
       try {
         data = JSON.parse(responseText); // Manually parse JSON
-        console.log('[Frontend] Parsed JSON data:', data);
       } catch (jsonError) {
         console.error('[Frontend] Error parsing JSON response:', jsonError, responseText);
         error.classList.remove('hidden');
@@ -100,10 +97,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (response.ok) {
+        if (!Array.isArray(data)) {
+          console.error('[Frontend] Expected an array of stock results, but received:', data);
+          error.classList.remove('hidden');
+          error.textContent = 'Error: Unexpected data format from server. Expected an array.';
+          loading.classList.add('hidden');
+          return;
+        }
         data.forEach(result => {
           const resultDiv = document.createElement('div');
           resultDiv.className = 'mb-6';
           if (result.error) {
+            console.warn(`[Frontend] Error in stock result for ${result.symbol}: ${result.error}`);
             resultDiv.innerHTML = `
               <h2 class="text-xl font-semibold mb-2">Results for ${result.symbol}</h2>
               <p class="text-red-500">${result.error}</p>
@@ -116,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         results.classList.remove('hidden');
       } else {
+        console.error('[Frontend] Response not OK, handling error:', data);
         error.classList.remove('hidden');
         error.textContent = data.error || 'Failed to fetch data. Check symbols or API key.';
       }
@@ -129,6 +135,83 @@ document.addEventListener('DOMContentLoaded', () => {
         startCountdown(duration); // Restart countdown if continuous analysis is active
       }
     }
+  }
+
+  // Function to render the stock chart
+  function renderStockChart(symbol, historicalPrices, historicalSMA50, historicalSMA200) {
+    const ctx = document.getElementById(`stockChart-${symbol}`);
+    if (!ctx) {
+      console.warn(`Chart canvas not found for ${symbol}. Skipping chart render.`);
+      return;
+    }
+    const chartContext = ctx.getContext('2d');
+
+    const labels = historicalPrices.map(data => data.date);
+    const prices = historicalPrices.map(data => data.close);
+    const sma50 = historicalSMA50.map(data => data.sma);
+    const sma200 = historicalSMA200.map(data => data.sma);
+
+    new Chart(chartContext, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Close Price',
+            data: prices,
+            borderColor: 'blue',
+            backgroundColor: 'transparent',
+            borderWidth: 1,
+            pointRadius: 0,
+          },
+          {
+            label: '50-Day SMA',
+            data: sma50,
+            borderColor: 'green',
+            backgroundColor: 'transparent',
+            borderWidth: 1,
+            pointRadius: 0,
+          },
+          {
+            label: '200-Day SMA',
+            data: sma200,
+            borderColor: 'red',
+            backgroundColor: 'transparent',
+            borderWidth: 1,
+            pointRadius: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: `${symbol} Stock Price with SMAs`,
+          },
+        },
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'month',
+              tooltipFormat: 'MMM DD, YYYY',
+            },
+            title: {
+              display: true,
+              text: 'Date',
+            },
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Price ($)',
+            },
+          },
+        },
+      },
+    });
   }
 
   function displayStockData(stock, lookbackDays) {
@@ -284,8 +367,8 @@ document.addEventListener('DOMContentLoaded', () => {
           ${(stock.quote?.ma200CrossoverUpLookback || stock.quote?.ma200CrossoverDownLookback) ? `
             <div class="bg-gray-50 p-4 rounded-lg mb-4">
               <h3 class="text-lg font-semibold text-gray-700 mb-2">MA200 Crossovers</h3>
-              ${stock.quote?.ma200CrossoverUpLookback ? `<p class="text-purple-600 font-semibold">MA200 Crossover Up Detected on ${stock.quote.ma200CrossoverUpDate}</p>` : ''}
-              ${stock.quote?.ma200CrossoverDownLookback ? `<p class="text-purple-600 font-semibold">MA200 Crossover Down Detected on ${stock.quote.ma200CrossoverDownDate}</p>` : ''}
+          ${stock.quote?.ma200CrossoverUpLookback ? `<p class="text-purple-600 font-semibold">MA200 Crossover Up Detected on ${stock.quote.ma200CrossoverUpDate}</p>` : ''}
+          ${stock.quote?.ma200CrossoverDownLookback ? `<p class="text-purple-600 font-semibold">MA200 Crossover Down Detected on ${stock.quote.ma200CrossoverDownDate}</p>` : ''}
             </div>
           ` : ''}
 
@@ -322,10 +405,28 @@ document.addEventListener('DOMContentLoaded', () => {
                   <p>Negative: <span class="font-medium">${stock.sentimentAverage.negative}%</span></p>
                   <p>Neutral: <span class="font-medium">${stock.sentimentAverage.neutral}%</span></p>
                 </div>
-            </div>
+          </div>
+          ` : ''}
+
+          ${stock.quote?.historicalPrices && stock.quote?.historicalPrices.length > 0 &&
+              stock.quote?.historicalSMA50 && stock.quote?.historicalSMA50.length > 0 &&
+              stock.quote?.historicalSMA200 && stock.quote?.historicalSMA200.length > 0 ? `
+            <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Stock Price Chart</h3>
+                <div style="height: 400px;">
+                    <canvas id="stockChart-${stock.symbol}"></canvas>
+          </div>
+          </div>
           ` : ''}
       `;
       results.appendChild(stockDiv);
+
+      // Render the chart if historical data is available
+      if (stock.quote.historicalPrices && stock.quote.historicalPrices.length > 0 &&
+          stock.quote.historicalSMA50 && stock.quote.historicalSMA50.length > 0 &&
+          stock.quote.historicalSMA200 && stock.quote.historicalSMA200.length > 0) {
+        renderStockChart(stock.symbol, stock.quote.historicalPrices, stock.quote.historicalSMA50, stock.quote.historicalSMA200);
+      }
   }
 
   logoutBtn.addEventListener('click', async () => {

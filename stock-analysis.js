@@ -420,13 +420,15 @@ async function analyzeStock(symbol, apiKey, provider, lookbackDays = 1) {
   const fromDateForNews = getLastTradingDays(20)[0]; // For news sentiment
   const toDateForNews = today;
   // Need enough data for 200-day MA + lookbackDays, plus a large buffer for non-trading days
-  const startDateForHistory = moment().subtract(lookbackDays + 200 + 365, 'days').format('YYYY-MM-DD'); 
+  // For charting, we need a longer history, e.g., 2 years (730 days) + buffer for SMA calculation
+  const startDateForHistory = moment().subtract(Math.max(lookbackDays + 200 + 365, 730 + 200), 'days').format('YYYY-MM-DD'); 
   const endDateForHistory = moment().format('YYYY-MM-DD');
 
   console.log(`[${symbol}] lookbackDays: ${lookbackDays}`);
   console.log(`[${symbol}] startDateForHistory: ${startDateForHistory}, endDateForHistory: ${endDateForHistory}`);
 
   let historicalPrices = [];
+  let historicalSma50 = [];
   let historicalSma200 = [];
   let ma200CrossoverUpLookback = false;
   let ma200CrossoverDownLookback = false;
@@ -503,6 +505,13 @@ async function analyzeStock(symbol, apiKey, provider, lookbackDays = 1) {
           return smaValues;
         };
 
+        if (closes.length >= 50) {
+          historicalSma50 = calculateSMA(closes, 50);
+          console.log(`[${symbol}] Calculated ${historicalSma50.filter(s => !isNaN(s.sma)).length} valid 50-day SMAs.`);
+        } else {
+          console.warn(`[${symbol}] Not enough historical data (${closes.length} days) to calculate 50-day SMA. Required: 50`);
+        }
+
         if (closes.length >= 200) {
           historicalSma200 = calculateSMA(closes, 200);
           console.log(`[${symbol}] Calculated ${historicalSma200.filter(s => !isNaN(s.sma)).length} valid 200-day SMAs.`);
@@ -520,7 +529,9 @@ async function analyzeStock(symbol, apiKey, provider, lookbackDays = 1) {
   }
 
   console.log(`[${symbol}] Full historicalSma200 length: ${historicalSma200.length}`);
+  console.log(`[${symbol}] Full historicalSma50 length: ${historicalSma50.length}`);
   console.log(`[${symbol}] Sample historicalSma200:`, historicalSma200.filter(s => !isNaN(s.sma)).slice(0, 5)); // Log first 5 valid entries
+  console.log(`[${symbol}] Sample historicalSma50:`, historicalSma50.filter(s => !isNaN(s.sma)).slice(0, 5)); // Log first 5 valid entries
   console.log(`[${symbol}] Sample historicalPrices:`, historicalPrices.slice(0, 5)); // Log first 5 entries
 
   // --- Crossover Detection Logic ---
@@ -585,7 +596,7 @@ async function analyzeStock(symbol, apiKey, provider, lookbackDays = 1) {
         if (calendarEvents.calendarEvents.earnings && calendarEvents.calendarEvents.earnings.earningsDate && calendarEvents.calendarEvents.earnings.earningsDate.length > 0) {
           upcomingEarningsDate = moment(calendarEvents.calendarEvents.earnings.earningsDate[0]).format('YYYY-MM-DD');
         }
-        if (calendarEvents.calendarEvents.exDividendDate && calendarEvents.calendarEvents.exDividendDate.raw) {
+        if (calendarEvents.calendarEvents.exDividendDate) {
           exDividendDate = moment(calendarEvents.calendarEvents.exDividendDate).format('YYYY-MM-DD');
         }
       }
@@ -660,7 +671,10 @@ async function analyzeStock(symbol, apiKey, provider, lookbackDays = 1) {
       ma200CrossoverUpDate: ma200CrossoverUpDate,
       ma200CrossoverDownDate: ma200CrossoverDownDate,
       upcomingEarningsDate: upcomingEarningsDate,
-      exDividendDate: exDividendDate
+      exDividendDate: exDividendDate,
+      historicalPrices: historicalPrices,
+      historicalSMA50: historicalSma50,
+      historicalSMA200: historicalSma200
     };
   }
 
