@@ -105,52 +105,52 @@
         <div id="settings-panel" class="bg-white p-6 rounded-lg shadow-lg">
           <h2 class="text-xl font-semibold mb-4 text-center">Alert Settings</h2>
           <div class="mb-2">
-            <label for="tolerance" class="block text-sm font-medium text-gray-700">Highlight MA Tolerance (%):</label>
+            <label for="tolerance" class="block text-sm font-medium text-gray-700"><p class="font-bold">Price % from MA Threshold:</p></label>
             <input type="number" id="tolerance" value="5" min="0" max="100" class="mt-1 block w-full p-2 border rounded">
             <label for="muteMaAlerts" class="inline-flex items-center mt-1">
               <input type="checkbox" id="muteMaAlerts" class="form-checkbox">
-              <span class="ml-2 text-sm text-gray-700">Mute MA Alerts until tomorrow</span>
+              <span class="ml-2 text-sm text-gray-700">Mute all MA-related Alerts until tomorrow</span>
             </label>
           </div>
           <div class="mb-2">
-            <label for="volumeTolerance" class="block text-sm font-medium text-gray-700">20 day Volume abnormally (%):</label>
+            <label for="volumeTolerance" class="block text-sm font-medium text-gray-700"><p class="font-bold">Volume Change % Threshold:</p></label>
             <input type="number" id="volumeTolerance" value="5" min="0" max="100" class="mt-1 block w-full p-2 border rounded">
             <label for="muteVolumeAlerts" class="inline-flex items-center mt-1">
               <input type="checkbox" id="muteVolumeAlerts" class="form-checkbox">
-              <span class="ml-2 text-sm text-gray-700">Mute Volume Alerts until tomorrow</span>
+              <span class="ml-2 text-sm text-gray-700">Mute Volume Change Alerts until tomorrow</span>
             </label>
           </div>
           <div class="mb-2">
-            <label for="priceChangeTolerance" class="block text-sm font-medium text-gray-700">Price Change Tolerance (%):</label>
+            <label for="priceChangeTolerance" class="block text-sm font-medium text-gray-700"><p class="font-bold">Daily Price Change % Threshold:</p></label>
             <input type="number" id="priceChangeTolerance" value="2" min="0" max="100" class="mt-1 block w-full p-2 border rounded">
             <label for="mutePriceChangeAlerts" class="inline-flex items-center mt-1">
               <input type="checkbox" id="mutePriceChangeAlerts" class="form-checkbox">
-              <span class="ml-2 text-sm text-gray-700">Mute Price Change Alerts until tomorrow</span>
+              <span class="ml-2 text-sm text-gray-700">Mute Daily Price Change Alerts until tomorrow</span>
             </label>
           </div>
           <div class="mb-2">
-            <label for="crossoverLookbackDays" class="block text-sm font-medium text-gray-700">Crossover Lookback Days:</label>
+            <label for="crossoverLookbackDays" class="block text-sm font-medium text-gray-700"><p class="font-bold">MA Crossover Lookback Days (for historical alerts):</p></label>
             <input type="number" id="crossoverLookbackDays" value="10" min="1" max="365" class="mt-1 block w-full p-2 border rounded">
           </div>
           <div class="mb-2">
-            <label for="alertEmail" class="block text-sm font-medium text-gray-700">Alert Email (optional):</label>
-            <input type="email" id="alertEmail" placeholder="Enter email for alerts" class="mt-1 block w-full p-2 border rounded">
-          </div>
-          <div class="mb-2">
-            <label for="alertCooldown" class="block text-sm font-medium text-gray-700">Alert Cooldown (seconds):</label>
+            <label for="alertCooldown" class="block text-sm font-medium text-gray-700"><p class="font-bold">Alert Cooldown Period (seconds):</p></label>
             <input type="number" id="alertCooldown" value="300" min="1" class="mt-1 block w-full p-2 border rounded">
           </div>
           <div class="mt-4">
             <label for="muteMa200CrossoverUpAlerts" class="inline-flex items-center">
               <input type="checkbox" id="muteMa200CrossoverUpAlerts" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-              <span class="ml-2 text-sm text-gray-700">Mute MA200 Crossover Up Alerts until tomorrow</span>
+              <span class="ml-2 text-sm text-gray-700">Mute 200-Day MA Crossover UP Alerts until tomorrow</span>
             </label>
           </div>
           <div class="mt-2">
             <label for="muteMa200CrossoverDownAlerts" class="inline-flex items-center">
               <input type="checkbox" id="muteMa200CrossoverDownAlerts" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-              <span class="ml-2 text-sm text-gray-700">Mute MA200 Crossover Down Alerts until tomorrow</span>
+              <span class="ml-2 text-sm text-gray-700">Mute 200-Day MA Crossover DOWN Alerts until tomorrow</span>
             </label>
+          </div>
+          <div class="mb-2 mt-4">
+            <label for="alertEmail" class="block text-sm font-medium text-gray-700"><p class="font-bold">Alert Email (optional):</p></label>
+            <input type="email" id="alertEmail" placeholder="Enter email for alerts" class="mt-1 block w-full p-2 border rounded">
           </div>
         </div>
       </div>
