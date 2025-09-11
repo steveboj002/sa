@@ -336,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       stockDiv.innerHTML = `
           <h2 class="text-2xl font-bold text-gray-800 mb-2">${stock.companyName} (${stock.symbol})</h2>
-          <p class="text-sm text-gray-600 mb-4">As of 04:59 PM EDT, August 25, 2025</p>
+          ${stock.timestamp ? `<p class="text-sm text-gray-600 mb-4">As of ${stock.timestamp}</p>` : ''}
           ${stock.companyNameError && stock.companyNameError !== 'No overview data available for this symbol' ? `<p class="text-red-500 mb-4">Company Name Error: ${stock.companyNameError}</p>` : ''}
           
           <div id="quote-section-${stock.symbol}" class="bg-gray-50 p-4 rounded-lg mb-4 ${stock.quote ? '' : 'hidden'}">
@@ -349,18 +349,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p>High: <span class="font-medium">$${stock.quote?.high || 'N/A'}</span></p>
                 <p>Low: <span class="font-medium">$${stock.quote?.low || 'N/A'}</span></p>
                 <p>Previous Close: <span class="font-medium">$${stock.quote?.previousClose || 'N/A'}</span></p>
-                <p class="${ma50ColorClass}">50-Day MA: <span class="font-medium">${percent50Day !== undefined ? `${percent50Day}%` : 'N/A'}</span> ${stock.sma50Error ? `<span class="text-red-500 text-xs">(${stock.sma50Error})</span>` : ''}</p>
-                <p class="${ma200ColorClass}">200-Day MA: <span class="font-medium">${percent200Day !== undefined ? `${percent200Day}%` : 'N/A'}</span> ${stock.sma200Error ? `<span class="text-red-500 text-xs">(${stock.sma200Error})</span>` : ''}</p>
+                <p class="${ma50ColorClass}">Price % From 50-Day MA: <span class="font-medium">${percent50Day !== undefined ? `${percent50Day}%` : 'N/A'}</span> ${stock.sma50Error ? `<span class="text-red-500 text-xs">(${stock.sma50Error})</span>` : ''}</p>
+                <p class="${ma200ColorClass}">Price % From 200-Day MA: <span class="font-medium">${percent200Day !== undefined ? `${percent200Day}%` : 'N/A'}</span> ${stock.sma200Error ? `<span class="text-red-500 text-xs">(${stock.sma200Error})</span>` : ''}</p>
                 <p class="${volumeComparisonColorClass}">Volume vs 20-Day Avg: <span class="font-medium">${volumeComparison !== undefined ? `${volumeComparison}%` : 'N/A'}</span> ${stock.volumeError ? `<span class="text-red-500 text-xs">(${stock.volumeError})</span>` : ''}</p>
                 <p>Price-Based Sentiment: <span class="font-medium">${stock.quote?.priceSentiment || 'N/A'}</span></p>
               </div>
           </div>
 
-          ${(stock.quote?.upcomingEarningsDate || stock.quote?.exDividendDate) ? `
+          ${(stock.upcomingEvents && stock.upcomingEvents.length > 0) || (stock.recentPastEvents && stock.recentPastEvents.length > 0) ? `
             <div class="bg-gray-50 p-4 rounded-lg mb-4">
-              <h3 class="text-lg font-semibold text-gray-700 mb-2">Upcoming Events</h3>
-              ${stock.quote?.upcomingEarningsDate ? `<p>Upcoming Earnings Date: <span class="font-medium">${stock.quote.upcomingEarningsDate}</span></p>` : ''}
-              ${stock.quote?.exDividendDate ? `<p>Ex-Dividend Date: <span class="font-medium">${stock.quote.exDividendDate}</span></p>` : ''}
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">Key Dates</h3>
+              ${stock.upcomingEvents && stock.upcomingEvents.length > 0 ? `
+                <h4 class="text-md font-medium text-gray-600 mb-1 mt-2">Upcoming Events:</h4>
+                <ul class="list-disc list-inside ml-4">
+                  ${stock.upcomingEvents.map(event => `<li>${event.type}: <span class="font-medium">${event.date}</span></li>`).join('')}
+                </ul>
+              ` : ''}
+              ${stock.recentPastEvents && stock.recentPastEvents.length > 0 ? `
+                <h4 class="text-md font-medium text-gray-600 mb-1 mt-2">Recent Past Events:</h4>
+                <ul class="list-disc list-inside ml-4">
+                  ${stock.recentPastEvents.map(event => `<li>${event.type}: <span class="font-medium">${event.date}</span></li>`).join('')}
+                </ul>
+              ` : ''}
             </div>
           ` : ''}
 

@@ -587,18 +587,46 @@ async function analyzeStock(symbol, apiKey, provider, lookbackDays = 1) {
 
   let upcomingEarningsDate = null;
   let exDividendDate = null;
+  let recentEarningsDates = [];
+  let recentExDividendDate = null;
+  let upcomingEvents = [];
+  let recentPastEvents = [];
 
   if (provider === 'yfinance') {
     try {
       console.log(`Fetching calendar events for ${symbol} with yahoo-finance2`);
       const calendarEvents = await yahooFinance.quoteSummary(symbol, { modules: ['calendarEvents'] });
       if (calendarEvents && calendarEvents.calendarEvents) {
+        const todayMoment = moment();
+        const ninetyDaysAgo = moment().subtract(90, 'days'); // Changed from 30 days
+        const ninetyDaysFromNow = moment().add(90, 'days');
+
         if (calendarEvents.calendarEvents.earnings && calendarEvents.calendarEvents.earnings.earningsDate && calendarEvents.calendarEvents.earnings.earningsDate.length > 0) {
-          upcomingEarningsDate = moment(calendarEvents.calendarEvents.earnings.earningsDate[0]).format('YYYY-MM-DD');
+          calendarEvents.calendarEvents.earnings.earningsDate.forEach(eDate => {
+            const eventMoment = moment(eDate);
+            const formattedDate = eventMoment.format('YYYY-MM-DD');
+            if (eventMoment.isSameOrAfter(todayMoment, 'day') && eventMoment.isSameOrBefore(ninetyDaysFromNow, 'day')) {
+              upcomingEvents.push({ type: 'Earnings', date: formattedDate });
+            } else if (eventMoment.isBetween(ninetyDaysAgo, todayMoment, 'day', '(]')) { // Updated to ninetyDaysAgo
+              recentPastEvents.push({ type: 'Earnings', date: formattedDate });
+            }
+          });
         }
+
         if (calendarEvents.calendarEvents.exDividendDate) {
-          exDividendDate = moment(calendarEvents.calendarEvents.exDividendDate).format('YYYY-MM-DD');
+          const eventMoment = moment(calendarEvents.calendarEvents.exDividendDate);
+          const formattedDate = eventMoment.format('YYYY-MM-DD');
+          if (eventMoment.isSameOrAfter(todayMoment, 'day') && eventMoment.isSameOrBefore(ninetyDaysFromNow, 'day')) {
+            upcomingEvents.push({ type: 'Ex-Dividend', date: formattedDate });
+          } else if (eventMoment.isBetween(ninetyDaysAgo, todayMoment, 'day', '(]')) { // Updated to ninetyDaysAgo
+            recentPastEvents.push({ type: 'Ex-Dividend', date: formattedDate });
+          }
         }
+
+        // Sort events by date
+        upcomingEvents.sort((a, b) => moment(a.date).diff(moment(b.date)));
+        recentPastEvents.sort((a, b) => moment(b.date).diff(moment(a.date))); // Sort descending for recent past
+
       }
       await delay(1000);
     } catch (error) {
@@ -611,7 +639,7 @@ async function analyzeStock(symbol, apiKey, provider, lookbackDays = 1) {
     companyName: companyNameResult.error ? symbol.toUpperCase() : companyNameResult.data,
     companyNameError: companyNameResult.error || null,
     date: moment().format('YYYY-MM-DD'),
-    timestamp: '02:08 PM EDT, August 26, 2025',
+    timestamp: moment().format('hh:mm A [EDT], MMMM DD, YYYY'),
     quote: null,
     quoteError: quoteDataResult.error || null,
     sma50Error: sma50Result.error || null,
@@ -636,7 +664,9 @@ async function analyzeStock(symbol, apiKey, provider, lookbackDays = 1) {
       positive: 0,
       negative: 0,
       neutral: 0
-    }
+    },
+    upcomingEvents: upcomingEvents,
+    recentPastEvents: recentPastEvents
   };
 
   if (quoteDataResult.data) {
@@ -670,8 +700,8 @@ async function analyzeStock(symbol, apiKey, provider, lookbackDays = 1) {
       ma200CrossoverDownLookback: ma200CrossoverDownLookback,
       ma200CrossoverUpDate: ma200CrossoverUpDate,
       ma200CrossoverDownDate: ma200CrossoverDownDate,
-      upcomingEarningsDate: upcomingEarningsDate,
-      exDividendDate: exDividendDate,
+      // upcomingEarningsDate: upcomingEarningsDate, // Remove direct assignment
+      // exDividendDate: exDividendDate, // Remove direct assignment
       historicalPrices: historicalPrices,
       historicalSMA50: historicalSma50,
       historicalSMA200: historicalSma200
