@@ -65,11 +65,17 @@ export function renderWatchlist() {
   } else {
     watchlist.forEach(symbol => {
       const symbolDiv = document.createElement('div');
-      symbolDiv.className = 'flex items-center bg-gray-200 px-2 py-1 rounded';
+      symbolDiv.className = 'flex items-center justify-between bg-gray-100 border border-gray-300 rounded-full w-full pl-3 pr-2 py-1.5 text-sm font-medium text-gray-800 mb-2';
       symbolDiv.innerHTML = `
-        <span class="mr-2">${symbol}</span>
-        <button class="analyze-single-btn text-blue-500 hover:text-blue-700 mr-2" data-symbol="${symbol}">Analyze</button>
-        <button class="remove-watchlist-btn text-red-500 hover:text-red-700" data-symbol="${symbol}">Remove</button>
+        <span class="mr-1">${symbol}</span>
+        <div>
+          <button class="analyze-single-btn text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full px-2 py-0.5 transition-colors duration-200 mr-1" data-symbol="${symbol}">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" /></svg>
+          </button>
+          <button class="remove-watchlist-btn text-red-600 hover:text-red-800 hover:bg-red-100 rounded-full px-2 py-0.5 transition-colors duration-200" data-symbol="${symbol}">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.581.19-2.357.362L3 4.5H2.25a.75.75 0 000 1.5H2.8l.628 10.387a2.75 2.75 0 002.75 2.613h6.25a2.75 2.75 0 002.75-2.613L17.2 6h.55a.75.75 0 000-1.5H17l-.643-.165a4.002 4.002 0 00-2.357-.362V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4a1.25 1.25 0 00-1.25 1.25v.5c0 .69.56 1.25 1.25 1.25s1.25-.56 1.25-1.25v-.5A1.25 1.25 0 0010 4zM8.75 8.25a.75.75 0 00-1.5 0v6a.75.75 0 001.5 0v-6zM11.25 8.25a.75.75 0 00-1.5 0v6a.75.75 0 001.5 0v-6z" clip-rule="evenodd" /></svg>
+          </button>
+        </div>
       `;
       watchlistDiv.appendChild(symbolDiv);
     });

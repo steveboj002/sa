@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       stockDiv.innerHTML = `
-          <h2 class="text-2xl font-bold text-gray-800 mb-2">${stock.companyName} (${stock.symbol})</h2>
+          <h2 class="text-2xl font-bold text-gray-800 mb-2">${stock.companyName}</h2>
           ${stock.timestamp ? `<p class="text-sm text-gray-600 mb-4">As of ${stock.timestamp}</p>` : ''}
           ${stock.companyNameError && stock.companyNameError !== 'No overview data available for this symbol' ? `<p class="text-red-500 mb-4">Company Name Error: ${stock.companyNameError}</p>` : ''}
           
@@ -528,11 +528,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   watchlistDiv.addEventListener('click', (e) => {
-    if (e.target.classList.contains('remove-watchlist-btn')) {
-      const symbol = e.target.dataset.symbol;
+    const analyzeButton = e.target.closest('.analyze-single-btn');
+    const removeButton = e.target.closest('.remove-watchlist-btn');
+
+    if (removeButton) {
+      const symbol = removeButton.dataset.symbol;
       removeFromWatchlist(symbol);
-    } else if (e.target.classList.contains('analyze-single-btn')) {
-      const symbol = e.target.dataset.symbol;
+    } else if (analyzeButton) {
+      const symbol = analyzeButton.dataset.symbol;
       analyzeSymbols([symbol]);
     }
   });
