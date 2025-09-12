@@ -26,17 +26,31 @@ export function updateAuthUI(isLoggedIn, username) {
   const signupPassword = document.getElementById('signup-password');
   const error = document.getElementById('error');
 
-  // Toggle visibility of auth forms and user section
-  loginForm.classList.toggle('hidden', isLoggedIn);
-  signupForm.classList.add('hidden'); // Always hide signup when updating auth UI
-  userSection.classList.toggle('hidden', !isLoggedIn);
-
-  // Toggle visibility of dashboard panels
-  inputActionPanel.classList.toggle('hidden', !isLoggedIn);
-  watchlistPanel.classList.toggle('hidden', !isLoggedIn);
-  settingsPanel.classList.toggle('hidden', !isLoggedIn);
-  resultsAdsPanel.classList.toggle('hidden', !isLoggedIn);
-  authSectionPanel.classList.toggle('hidden', isLoggedIn); // Hide auth panel when logged in
+  // Manage visibility of authentication forms and user section within the auth panel
+  if (isLoggedIn) {
+    loginForm.classList.add('hidden');
+    signupForm.classList.add('hidden');
+    userSection.classList.remove('hidden');
+    // authSectionPanel remains visible, acting as a container
+  } else {
+    loginForm.classList.remove('hidden');
+    signupForm.classList.add('hidden');
+    userSection.classList.add('hidden');
+    // authSectionPanel remains visible
+  }
+  
+  // Toggle visibility of dashboard panels based on login status
+  if (isLoggedIn) {
+    inputActionPanel.classList.remove('hidden');
+    watchlistPanel.classList.remove('hidden');
+    settingsPanel.classList.remove('hidden');
+    resultsAdsPanel.classList.remove('hidden');
+  } else {
+    inputActionPanel.classList.add('hidden');
+    watchlistPanel.classList.add('hidden');
+    settingsPanel.classList.add('hidden');
+    resultsAdsPanel.classList.add('hidden');
+  }
 
   if (isLoggedIn) {
     userGreeting.textContent = `Logged in as ${username}`;

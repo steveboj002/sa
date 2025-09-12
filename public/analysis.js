@@ -544,16 +544,18 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch('/user', {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     })
-      .then(response => response.json())
-      .then(data => {
-        if (response.ok) {
-          updateAuthUI(true, data.username);
-        } else {
-          localStorage.removeItem('token');
-          updateAuthUI(false);
+      .then(response => {
+        if (!response.ok) {
+          return response.text().then(text => Promise.reject(text)); // Handle non-OK responses as text
         }
+        return response.json();
       })
-      .catch(() => {
+      .then(data => {
+        updateAuthUI(true, data.username);
+        console.log('[Auth Check] userSection classList after updateAuthUI call:', document.getElementById('user-section').classList.value);
+      })
+      .catch(error => {
+        console.error('[Auth Check] Error during user data fetch or token validation:', error);
         localStorage.removeItem('token');
         updateAuthUI(false);
       });
